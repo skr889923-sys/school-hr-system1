@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { LetterTemplate, SignatureBox } from '../types';
 import { officialTemplates } from '../utils/officialTemplates';
 import { uploadFile } from '../utils/storage';
-import { Plus, Trash2, FileText, Upload, Loader2, X, Settings, Download } from 'lucide-react';
+import { Plus, Trash2, Edit2, FileText, Upload, Loader2, X, Settings, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactQuill from 'react-quill-new';
@@ -38,6 +38,8 @@ export default function TemplateManager() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [editTemplateId, setEditTemplateId] = useState<string | null>(null);
+  const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
   
   // Form state
   const [templateName, setTemplateName] = useState('');
@@ -88,37 +90,36 @@ export default function TemplateManager() {
 
   const handleSave = async () => {
     if (!templateName) return alert('الرجاء إدخال اسم القالب');
-    if (templateType === 'pdf' && !pdfFile) return alert('الرجاء اختيار ملف PDF');
+    if (templateType === 'pdf' && !pdfFile && !existingPdfUrl) return alert('الرجاء اختيار ملف PDF');
     
     setSaving(true);
     try {
-      const id = uuidv4();
-      let pdfUrl = '';
+      const id = editTemplateId || uuidv4();
+      let pdfUrl = existingPdfUrl || '';
 
       if (templateType === 'pdf' && pdfFile) {
         const res = await uploadFile(pdfFile, `templates/${id}_${pdfFile.name}`);
         pdfUrl = res.downloadUrl;
       }
 
-      const newTemplate: LetterTemplate = {
-        id,
+      const templateData = {
         name: templateName,
         type: templateType,
-        content: templateType === 'text' ? textContent : undefined,
-        pdfUrl: templateType === 'pdf' ? pdfUrl : undefined,
-        signatureBox: templateType === 'pdf' ? sigBox : undefined,
-        createdAt: new Date().toISOString()
+        content: templateType === 'text' ? textContent : null,
+        pdf_url: templateType === 'pdf' ? pdfUrl : null,
+        signature_box: templateType === 'pdf' ? sigBox : null,
       };
 
-      await supabase.from('hr_templates').insert({
-        id: newTemplate.id,
-        name: newTemplate.name,
-        type: newTemplate.type,
-        content: newTemplate.content || null,
-        pdf_url: newTemplate.pdfUrl || null,
-        signature_box: newTemplate.signatureBox || null,
-        created_at: newTemplate.createdAt
-      });
+      if (editTemplateId) {
+        await supabase.from('hr_templates').update(templateData).eq('id', editTemplateId);
+      } else {
+        await supabase.from('hr_templates').insert({
+          id,
+          ...templateData,
+          created_at: new Date().toISOString()
+        });
+      }
+      
       setCreateModalOpen(false);
       resetForm();
     } catch (err) {
@@ -152,7 +153,21 @@ export default function TemplateManager() {
     }
   };
 
+  const handleEdit = (t: LetterTemplate) => {
+    setEditTemplateId(t.id);
+    setTemplateName(t.name);
+    setTemplateType(t.type);
+    if (t.type === 'text') setTextContent(t.content || '');
+    if (t.type === 'pdf') {
+      setExistingPdfUrl(t.pdfUrl || null);
+      if (t.signatureBox) setSigBox(t.signatureBox);
+    }
+    setCreateModalOpen(true);
+  };
+
   const resetForm = () => {
+    setEditTemplateId(null);
+    setExistingPdfUrl(null);
     setTemplateName('');
     setTemplateType('text');
     setTextContent('السلام عليكم ورحمة الله وبركاته،\nأفيدكم أنا الموظف {{employeeName}} ...');
@@ -185,7 +200,7 @@ export default function TemplateManager() {
             {isImporting ? 'جاري الاستيراد...' : 'استيراد النماذج الرسمية'}
           </button>
           <button 
-            onClick={() => setCreateModalOpen(true)}
+            onClick={() => { resetForm(); setCreateModalOpen(true); }}
             className="flex items-center gap-2 bg-slate-900 hover:bg-slate-950 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors"
           >
             <Plus size={16} /> إضافة قالب
@@ -217,8 +232,11 @@ export default function TemplateManager() {
                   </p>
                 )}
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end">
-                <button onClick={() => handleDelete(t.id)} className="text-rose-500 hover:bg-rose-100 p-1.5 rounded-lg transition-colors">
+              <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button onClick={() => handleEdit(t)} className="text-blue-500 hover:bg-blue-100 p-1.5 rounded-lg transition-colors" title="تعديل">
+                  <Edit2 size={16} />
+                </button>
+                <button onClick={() => handleDelete(t.id)} className="text-rose-500 hover:bg-rose-100 p-1.5 rounded-lg transition-colors" title="حذف">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -231,11 +249,11 @@ export default function TemplateManager() {
       <AnimatePresence>
         {createModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setCreateModalOpen(false)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setCreateModalOpen(false); resetForm(); }} />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <h3 className="text-base font-black text-slate-900">إضافة قالب جديد</h3>
-                <button onClick={() => setCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                <h3 className="text-base font-black text-slate-900">{editTemplateId ? 'تعديل القالب' : 'إضافة قالب جديد'}</h3>
+                <button onClick={() => { setCreateModalOpen(false); resetForm(); }} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
               </div>
               
               <div className="p-5 overflow-y-auto space-y-4">
@@ -278,6 +296,9 @@ export default function TemplateManager() {
                   <div className="space-y-4 border border-slate-200 p-4 rounded-xl bg-slate-50">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">ملف الـ PDF المرجعي</label>
+                      {editTemplateId && existingPdfUrl && !pdfFile && (
+                        <p className="text-[10px] text-green-600 mb-2 font-bold">✓ يوجد ملف PDF محفوظ حالياً. يمكنك رفع ملف جديد لاستبداله.</p>
+                      )}
                       <input type="file" accept="application/pdf" onChange={e => setPdfFile(e.target.files?.[0] || null)} className="w-full text-xs" />
                     </div>
                     
@@ -317,9 +338,9 @@ export default function TemplateManager() {
               </div>
               
               <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-white rounded-b-2xl">
-                <button onClick={() => setCreateModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-xs transition-colors">إلغاء</button>
+                <button onClick={() => { setCreateModalOpen(false); resetForm(); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-xs transition-colors">إلغاء</button>
                 <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2">
-                  {saving && <Loader2 size={14} className="animate-spin" />} حفظ القالب
+                  {saving && <Loader2 size={14} className="animate-spin" />} {editTemplateId ? 'حفظ التعديلات' : 'حفظ القالب'}
                 </button>
               </div>
             </motion.div>
