@@ -370,7 +370,13 @@ export default function ClientForm() {
   if (request.status !== 'pending' && request.status !== 'pending_employee_response') {
     return (
       <div className="min-h-screen bg-[#FAF9F6]">
-        <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-end items-center">
+        <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-between items-center">
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="text-sm font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+          >
+            بوابة الموظف / تسجيل الدخول
+          </button>
           <div className="flex items-center gap-3">
             <span className="font-black text-slate-800 text-lg">School System</span>
             <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
@@ -383,7 +389,13 @@ export default function ClientForm() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-slate-900 pb-16 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
-      <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-end items-center">
+      <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-between items-center">
+        <button 
+          onClick={() => navigate('/dashboard')} 
+          className="text-sm font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+        >
+          بوابة الموظف / تسجيل الدخول
+        </button>
         <div className="flex items-center gap-3">
           <span className="font-black text-slate-800 text-lg">School System</span>
           <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />

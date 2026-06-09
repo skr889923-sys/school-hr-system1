@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { LetterTemplate, SignatureBox } from '../types';
+import { officialTemplates } from '../utils/officialTemplates';
 import { uploadFile } from '../utils/storage';
-import { Plus, Trash2, FileText, Upload, Loader2, X, Settings } from 'lucide-react';
+import { Plus, Trash2, FileText, Upload, Loader2, X, Settings, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,6 +12,7 @@ export default function TemplateManager() {
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   
   // Form state
   const [templateName, setTemplateName] = useState('');
@@ -102,6 +104,29 @@ export default function TemplateManager() {
     }
   };
 
+  const importOfficialTemplates = async () => {
+    setIsImporting(true);
+    try {
+      for (const t of officialTemplates) {
+        await supabase.from('hr_templates').insert({
+          id: uuidv4(),
+          name: t.name,
+          type: t.type,
+          content: t.content,
+          pdf_url: null,
+          signature_box: null,
+          created_at: new Date().toISOString()
+        });
+      }
+      alert('تم استيراد النماذج الرسمية بنجاح!');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء الاستيراد');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const resetForm = () => {
     setTemplateName('');
     setTemplateType('text');
@@ -125,12 +150,22 @@ export default function TemplateManager() {
           </h2>
           <p className="text-xs text-slate-500 mt-1">قم بإعداد قوالب النصوص أو ملفات PDF مع تحديد مربع التوقيع.</p>
         </div>
-        <button 
-          onClick={() => setCreateModalOpen(true)}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-950 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors"
-        >
-          <Plus size={16} /> إضافة قالب
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={importOfficialTemplates}
+            disabled={isImporting}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+          >
+            {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+            {isImporting ? 'جاري الاستيراد...' : 'استيراد النماذج الرسمية'}
+          </button>
+          <button 
+            onClick={() => setCreateModalOpen(true)}
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-950 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+          >
+            <Plus size={16} /> إضافة قالب
+          </button>
+        </div>
       </div>
 
       {loading ? (

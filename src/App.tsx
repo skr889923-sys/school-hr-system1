@@ -89,7 +89,7 @@ function App() {
         <Route path="/dashboard" element={
           isAuthenticated && userRole === 'employee' ? <EmployeeDashboard /> : <Navigate to="/" />
         } />
-        <Route path="/request/:id" element={isAuthenticated ? <ClientForm /> : <Navigate to={`/login?redirect=/request/`} />} />
+        <Route path="/request/:id" element={<ClientForm />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
