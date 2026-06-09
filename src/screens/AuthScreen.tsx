@@ -68,7 +68,6 @@ export default function AuthScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-slate-800"
-                  placeholder="T157606@estb.moe.gov.sa"
                   dir="ltr"
                 />
               </div>
