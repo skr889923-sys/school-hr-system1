@@ -427,87 +427,21 @@ export default function ClientForm() {
 
           <form onSubmit={handleFormSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-10 shadow-sm">
             
-            {/* القسم 1: بيانات الموظف */}
+            {/* القسم 1: تفاصيل الطلب */}
             <div className="space-y-4">
               <div className="border-r-4 border-blue-600 pr-3">
-                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 1 — بيانات الموظف</h3>
+                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 1 — محتوى الخطاب / الإجراء</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 sm:p-6 space-y-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">اسم الموظف</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={request.employeeName}
-                    className="w-full text-xs border border-slate-200 bg-slate-100 px-3.5 py-3 rounded-xl font-semibold cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">الرقم الوظيفي (السجل المدني)</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={request.employeeId}
-                    className="w-full text-xs border border-slate-200 bg-slate-100 px-3.5 py-3 rounded-xl font-semibold cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">القسم / المرحلة</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={request.department}
-                    className="w-full text-xs border border-slate-200 bg-slate-100 px-3.5 py-3 rounded-xl font-semibold cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">المسمى الوظيفي</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={request.jobTitle}
-                    className="w-full text-xs border border-slate-200 bg-slate-100 px-3.5 py-3 rounded-xl font-semibold cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">الجوال <span className="text-rose-500">*</span></label>
-                  <input
-                    type="tel"
-                    required
-                    value={request.phone}
-                    onChange={(e) => updateFormField('phone', e.target.value)}
-                    className="w-full text-xs border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 px-3.5 py-3 rounded-xl font-semibold text-left focus:outline-none"
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    value={request.email}
-                    onChange={(e) => updateFormField('email', e.target.value)}
-                    className="w-full text-xs border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 px-3.5 py-3 rounded-xl font-semibold text-left focus:outline-none"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* القسم 2: تفاصيل الطلب */}
-            <div className="space-y-4 pt-6 border-t border-slate-100">
-              <div className="border-r-4 border-blue-600 pr-3">
-                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 2 — تفاصيل الطلب</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
-                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-2">نوع الطلب / الإجراء</label>
-                  <div className="w-full text-xs border border-slate-200 bg-slate-100 px-3.5 py-3 rounded-xl font-semibold cursor-not-allowed">
+                  <div className="w-full text-sm border border-slate-200 bg-slate-100 px-4 py-3 rounded-xl font-bold text-blue-900 cursor-not-allowed">
                     {request.requestType || 'غير محدد'}
                   </div>
                 </div>
 
                 {(request.requestType === 'طلب إجازة عادية/مرضية' || request.requestType === 'طلب استئذان') && (
-                  <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-2">تاريخ البدء</label>
                       <input
@@ -526,16 +460,15 @@ export default function ClientForm() {
                         className="w-full text-xs border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 px-3.5 py-3 rounded-xl font-semibold bg-white focus:outline-none"
                       />
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {template && (
-                  <div className="sm:col-span-2 mb-6">
-                    <h4 className="text-sm font-bold text-slate-700 mb-3">محتوى الخطاب / الإجراء:</h4>
+                  <div className="mb-6 w-full overflow-x-auto py-2">
                     {template.type === 'text' && template.content ? (
-                      <div id="pdf-content-wrapper" className="shadow-md p-8 sm:p-12 rounded-none mx-auto max-w-[210mm] min-h-[297mm] relative" style={{ aspectRatio: '210/297', backgroundColor: '#ffffff', color: '#000000', border: '1px solid #cbd5e1' }}>
+                      <div id="pdf-content-wrapper" className="shadow-lg rounded-sm mx-auto w-[210mm] min-h-[297mm] relative bg-white border border-slate-300 p-10 sm:p-14 transition-transform origin-top" style={{ color: '#000000' }}>
                         {/* A4 Document Header */}
-                        <div className="flex justify-between items-start pb-4 mb-8" style={{ borderBottom: '2px solid #1e293b' }}>
+                        <div className="flex justify-between items-start pb-4 mb-8 border-b-2 border-slate-900">
                           <div className="text-right space-y-1">
                             <p className="font-bold text-sm" style={{ color: '#000000' }}>المملكة العربية السعودية</p>
                             <p className="font-bold text-sm" style={{ color: '#000000' }}>وزارة التعليم</p>
@@ -554,13 +487,13 @@ export default function ClientForm() {
 
                         {/* Document Title */}
                         <div className="text-center mb-8">
-                          <h2 className="text-xl font-black underline underline-offset-8 decoration-2" style={{ color: '#000000' }}>
+                          <h2 className="text-2xl font-black underline underline-offset-8 decoration-2" style={{ color: '#000000' }}>
                             {request.requestType}
                           </h2>
                         </div>
 
                         {/* Document Content */}
-                        <div className="font-semibold leading-loose whitespace-pre-wrap text-base text-justify min-h-[400px]" style={{ color: '#000000' }}>
+                        <div className="font-semibold leading-[2.5] whitespace-pre-wrap text-[17px] text-justify min-h-[400px]" style={{ color: '#000000' }}>
                           {template.content
                             .replace(/{{employeeName}}/g, request.employeeName || '____________')
                             .replace(/{{department}}/g, request.department || '____________')
@@ -570,17 +503,17 @@ export default function ClientForm() {
                         {/* Document Footer (Signatures) */}
                         <div className="mt-16 pt-8 grid grid-cols-2 gap-8">
                           <div className="text-center space-y-8">
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>توقيع الموظف:</p>
+                            <p className="font-bold text-base" style={{ color: '#000000' }}>توقيع الموظف:</p>
                             {request.signatureData ? (
-                              <img src={request.signatureData} alt="توقيع الموظف" className="h-16 mx-auto object-contain mix-blend-multiply" />
+                              <img src={request.signatureData} alt="توقيع الموظف" className="h-20 mx-auto object-contain mix-blend-multiply" />
                             ) : (
                               <p className="text-xs italic" style={{ color: '#94a3b8' }}>سيتم إرفاق التوقيع إلكترونياً عند التقديم</p>
                             )}
                           </div>
                           <div className="text-center space-y-8">
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>مدير المدرسة:</p>
-                            <div className="h-16 flex items-center justify-center">
-                              <p className="text-[10px] italic border border-dashed p-2" style={{ color: '#94a3b8', borderColor: '#cbd5e1' }}>
+                            <p className="font-bold text-base" style={{ color: '#000000' }}>مدير المدرسة:</p>
+                            <div className="h-20 flex items-center justify-center">
+                              <p className="text-xs italic border border-dashed p-2" style={{ color: '#94a3b8', borderColor: '#cbd5e1' }}>
                                 (سيتم إرفاق توقيع مدير المدرسة من واجهة الإدارة لاحقاً)
                               </p>
                             </div>
@@ -588,21 +521,21 @@ export default function ClientForm() {
                         </div>
                       </div>
                     ) : template.type === 'pdf' && template.pdfUrl ? (
-                      <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-700">هذا الإجراء مرفق كملف PDF.</span>
-                        <a href={template.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-colors">
-                          <FileText size={16} /> فتح الخطاب الرسمي (PDF)
+                      <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4">
+                        <span className="text-sm font-bold text-slate-700">هذا الإجراء مرفق كملف PDF رسمي.</span>
+                        <a href={template.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md w-full sm:w-auto">
+                          <FileText size={20} /> عرض و طباعة الخطاب
                         </a>
                       </div>
                     ) : null}
                   </div>
                 )}
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
                     {request.requestType === 'مساءلة غياب/تأخر' ? 'العذر / المبررات' : 
                      request.requestType === 'شكوى/تظلم' ? 'تفاصيل الشكوى' : 'ملاحظات / تفاصيل أخرى (رد الموظف)'}
-                    <span className="text-rose-500">*</span>
+                    <span className="text-rose-500 mr-1">*</span>
                   </label>
                   <textarea
                     required
@@ -610,22 +543,22 @@ export default function ClientForm() {
                     value={request.justification}
                     placeholder="اكتب ردك أو عذرك هنا..."
                     onChange={(e) => updateFormField('justification', e.target.value)}
-                    className="w-full text-xs border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 px-3.5 py-3 rounded-xl font-semibold resize-none focus:outline-none"
+                    className="w-full text-sm border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 px-4 py-3 rounded-xl font-semibold resize-none focus:outline-none bg-white shadow-sm"
                   ></textarea>
                 </div>
               </div>
             </div>
 
-            {/* Section 3: Attachments */}
+            {/* Section 2: Attachments */}
             <div className="space-y-4 pt-6 border-t border-slate-100">
               <div className="border-r-4 border-blue-600 pr-3">
-                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 3 — المرفقات</h3>
+                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 2 — المرفقات</h3>
                 <p className="text-[10px] text-slate-500 mt-1">مثل: تقارير طبية، إثباتات، أو خطابات PDF</p>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
                 <div className="sm:col-span-8">
-                  <div className="border-2 border-dashed border-slate-200 hover:border-blue-600 bg-slate-50 rounded-xl p-6 text-center transition-all cursor-pointer relative group">
+                  <div className="border-2 border-dashed border-slate-300 hover:border-blue-600 bg-slate-50 rounded-xl p-6 text-center transition-all cursor-pointer relative group">
                     <input
                       type="file"
                       multiple
@@ -634,7 +567,7 @@ export default function ClientForm() {
                       className="absolute inset-0 opacity-0 cursor-pointer z-10"
                     />
                     <Upload className="mx-auto text-slate-400 mb-2 group-hover:text-blue-600 transition-colors" size={24} />
-                    <span className="block text-xs font-bold text-slate-700 mb-1">اضغط هنا لإرفاق ملفات</span>
+                    <span className="block text-xs font-bold text-slate-700 mb-1">اضغط هنا لإرفاق ملفات الداعمة لطلبك</span>
                   </div>
                 </div>
 
@@ -647,20 +580,20 @@ export default function ClientForm() {
                   ))}
                   {request.attachments?.length === 0 && (
                     <div className="text-center p-4 h-full flex items-center justify-center border border-slate-200 border-dashed rounded-lg text-[10px] text-slate-400">
-                      لا يوجد مرفقات
+                      لا توجد مرفقات
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Section 4: Signature */}
+            {/* Section 3: Signature */}
             <div className="space-y-4 pt-6 border-t border-slate-100">
               <div className="border-r-4 border-blue-600 pr-3">
-                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 4 — التوقيع والإقرار</h3>
+                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 3 — التوقيع والإقرار</h3>
               </div>
               
-              <label className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <label className="flex items-start gap-3 p-4 border border-slate-300 bg-white rounded-xl cursor-pointer hover:bg-slate-50 transition-colors shadow-sm">
                 <input
                   type="checkbox"
                   required
@@ -669,28 +602,28 @@ export default function ClientForm() {
                   className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-600"
                 />
                 <span className="text-xs font-semibold text-slate-700 leading-relaxed">
-                  أقر بأن جميع البيانات المدونة في هذا النموذج صحيحة، وأتحمل المسؤولية الكاملة في حال ثبوت عكس ذلك.
+                  أقر بأن جميع البيانات المدونة في هذا النموذج وجميع الردود والمرفقات صحيحة، وأتحمل المسؤولية الكاملة في حال ثبوت عكس ذلك.
                 </span>
               </label>
 
               <div className="mt-4">
                 <div className="flex justify-between items-end mb-2">
-                  <label className="block text-xs font-bold text-slate-700">التوقيع <span className="text-slate-400 font-normal">(ارسم توقيعك في المربع أدناه)</span></label>
-                  <button type="button" onClick={clearSignature} className="text-[10px] text-slate-500 hover:text-rose-600 font-bold px-2 py-1 bg-slate-100 hover:bg-rose-50 rounded transition-colors">
-                    مسح التوقيع
+                  <label className="block text-sm font-bold text-slate-700">التوقيع الإلكتروني <span className="text-slate-400 font-normal text-xs">(ارسم توقيعك في المربع أدناه)</span></label>
+                  <button type="button" onClick={clearSignature} className="text-[10px] text-rose-600 hover:text-white font-bold px-3 py-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-600 rounded-lg transition-colors">
+                    مسح وإعادة التوقيع
                   </button>
                 </div>
-                <div className="border-2 border-slate-200 bg-white rounded-xl overflow-hidden touch-none relative">
+                <div className="border-2 border-slate-300 bg-slate-50 rounded-xl overflow-hidden touch-none relative shadow-inner">
                   {!request.signatureData && !isDrawing && (
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <span className="text-slate-300 text-xs font-bold select-none">منطقة التوقيع الإلكتروني</span>
+                      <span className="text-slate-400 text-sm font-bold select-none border-2 border-dashed border-slate-300 px-6 py-2 rounded-xl">منطقة التوقيع الإلكتروني للموظف</span>
                     </div>
                   )}
                   <canvas
                     ref={signatureCanvasRef}
                     width={800}
                     height={200}
-                    className="w-full h-32 sm:h-40 cursor-crosshair"
+                    className="w-full h-32 sm:h-40 cursor-crosshair bg-transparent relative z-10"
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
                     onMouseUp={endDrawing}
@@ -703,19 +636,86 @@ export default function ClientForm() {
               </div>
             </div>
 
-            <div className="pt-8 flex flex-col sm:flex-row gap-4 items-center justify-between border-t border-slate-100">
+            {/* Section 4: Employee Data */}
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <div className="border-r-4 border-blue-600 pr-3">
+                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 4 — بيانات الموظف الأساسية</h3>
+                <p className="text-xs font-bold text-rose-600 mt-1">الرجاء تحديث رقم الجوال أو البريد الإلكتروني في حال كانت غير مكتملة، للتواصل معك.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">اسم الموظف</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={request.employeeName}
+                    className="w-full text-sm border border-slate-200 bg-slate-200 px-4 py-3 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">الرقم الوظيفي (السجل المدني)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={request.employeeId}
+                    className="w-full text-sm border border-slate-200 bg-slate-200 px-4 py-3 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">القسم / المرحلة</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={request.department}
+                    className="w-full text-sm border border-slate-200 bg-slate-200 px-4 py-3 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">المسمى الوظيفي</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={request.jobTitle}
+                    className="w-full text-sm border border-slate-200 bg-slate-200 px-4 py-3 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-2">الجوال <span className="text-rose-500">*</span></label>
+                  <input
+                    type="tel"
+                    required
+                    value={request.phone}
+                    onChange={(e) => updateFormField('phone', e.target.value)}
+                    className="w-full text-sm border border-blue-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 px-4 py-3 rounded-xl font-bold text-left outline-none bg-white transition-all"
+                    dir="ltr"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-2">البريد الإلكتروني</label>
+                  <input
+                    type="email"
+                    value={request.email}
+                    onChange={(e) => updateFormField('email', e.target.value)}
+                    className="w-full text-sm border border-blue-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 px-4 py-3 rounded-xl font-bold text-left outline-none bg-white transition-all"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 flex flex-col sm:flex-row gap-4 items-center justify-end border-t border-slate-100">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-3"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
-                    جاري إرسال الطلب...
+                    <Loader2 size={20} className="animate-spin" />
+                    جاري الاعتماد والإرسال...
                   </>
                 ) : (
-                  'إرسال الطلب واعتماد'
+                  'اعتماد وإرسال الطلب بشكل نهائي'
                 )}
               </button>
             </div>
