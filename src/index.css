@@ -55,3 +55,21 @@ body {
   }
 }
 
+
+/* Quill Editor Overrides */
+.ql-editor {
+  min-height: 300px;
+  font-family: inherit;
+  font-size: 14px;
+}
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  border-color: #cbd5e1;
+}

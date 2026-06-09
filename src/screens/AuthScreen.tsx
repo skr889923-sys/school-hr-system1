@@ -19,16 +19,39 @@ export default function AuthScreen() {
           const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
           if (signInError) throw signInError;
         } else {
-          const { error: signUpError } = await supabase.auth.signUp({ email, password });
+          // Check if employee exists
+          const { data: employeeData, error: employeeError } = await supabase
+            .from('employees')
+            .select('id, auth_user_id')
+            .eq('email', email)
+            .maybeSingle();
+
+          if (employeeError || !employeeData) {
+            throw new Error('NOT_FOUND_IN_EMPLOYEES');
+          }
+          
+          if (employeeData.auth_user_id) {
+            throw new Error('ALREADY_REGISTERED');
+          }
+
+          const { data: authData, error: signUpError } = await supabase.auth.signUp({ email, password });
           if (signUpError) throw signUpError;
+          
+          if (authData.user) {
+            await supabase.from('employees').update({ auth_user_id: authData.user.id }).eq('id', employeeData.id);
+          }
         }
       } catch (err: any) {
         if (isLoginMode) {
           setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
         } else {
-          setError(err.message?.includes('already registered') 
-            ? 'البريد الإلكتروني مسجل مسبقاً' 
-            : 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى');
+          if (err.message === 'NOT_FOUND_IN_EMPLOYEES') {
+            setError('البريد غير مسجل في النظام. يرجى مراجعة الموارد البشرية.');
+          } else if (err.message === 'ALREADY_REGISTERED' || err.message?.includes('already registered')) {
+            setError('هذا الحساب مسجل بالفعل، يرجى تسجيل الدخول.');
+          } else {
+            setError('حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى');
+          }
         }
       } finally {
         setIsLoading(false);
@@ -68,6 +91,7 @@ export default function AuthScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-slate-800"
+                  placeholder="school@system.sa"
                   dir="ltr"
                 />
               </div>

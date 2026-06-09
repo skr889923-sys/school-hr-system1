@@ -6,6 +6,31 @@ import { uploadFile } from '../utils/storage';
 import { Plus, Trash2, FileText, Upload, Loader2, X, Settings, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'script': 'sub'}, { 'script': 'super' }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'indent': '-1'}, { 'indent': '+1' }],
+    [{ 'direction': 'rtl' }, { 'align': [] }],
+    ['link', 'clean']
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'color', 'background',
+  'script',
+  'list', 'bullet', 'indent',
+  'direction', 'align',
+  'link'
+];
 
 export default function TemplateManager() {
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
@@ -207,7 +232,7 @@ export default function TemplateManager() {
         {createModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setCreateModalOpen(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                 <h3 className="text-base font-black text-slate-900">إضافة قالب جديد</h3>
                 <button onClick={() => setCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
@@ -236,8 +261,18 @@ export default function TemplateManager() {
                 {templateType === 'text' ? (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">محتوى القالب</label>
-                    <p className="text-[10px] text-slate-500 mb-2">استخدم المتغيرات التالية: {'{{employeeName}}, {{department}}, {{jobTitle}}'}</p>
-                    <textarea value={textContent} onChange={e => setTextContent(e.target.value)} rows={6} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-600 outline-none leading-relaxed" />
+                    <p className="text-[10px] text-slate-500 mb-2">استخدم المتغيرات الديناميكية مثل: <code className="bg-slate-100 px-1 rounded">[اسم الموظف]</code>، <code className="bg-slate-100 px-1 rounded">[الرقم الوظيفي]</code>، وسيطلب النظام تعبئتها قبل الإصدار.</p>
+                    <div className="bg-white rounded-lg border border-slate-300 overflow-hidden" dir="rtl">
+                      <ReactQuill 
+                        theme="snow" 
+                        value={textContent} 
+                        onChange={setTextContent} 
+                        modules={quillModules}
+                        formats={quillFormats}
+                        className="h-64"
+                        style={{ direction: 'rtl', textAlign: 'right' }}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4 border border-slate-200 p-4 rounded-xl bg-slate-50">

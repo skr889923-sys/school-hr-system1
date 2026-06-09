@@ -62,6 +62,7 @@ export interface EmployeeRequest {
   
   // --- Templates ---
   templateId?: string; // ID of the template associated with this request
+  templateData?: Record<string, string>; // Dynamic template field values filled by admin
   finalPdfUrl?: string; // Generated PDF with signature/text
   employeeSignature?: string; // Employee's base64 signature
   

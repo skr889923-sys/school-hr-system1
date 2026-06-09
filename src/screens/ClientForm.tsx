@@ -10,6 +10,8 @@ import {
   LetterTemplate,
 } from '../types';
 import ClientSuccessView from '../components/ClientSuccessView';
+import { renderTemplateContent } from '../utils/templateFields';
+import DOMPurify from 'dompurify';
 
 import {
   Info,
@@ -66,6 +68,7 @@ export default function ClientForm() {
             adminNotes: data.admin_notes,
             adminAttachments: data.admin_attachments || [],
             templateId: data.template_id,
+            templateData: data.template_data || {},
             finalPdfUrl: data.final_pdf_url,
             auditTrail: data.audit_trail || [],
             attachments: data.attachments || [],
@@ -79,7 +82,8 @@ export default function ClientForm() {
                 name: tData.name,
                 type: tData.type,
                 content: tData.content,
-                pdfUrl: tData.pdf_url
+                pdfUrl: tData.pdf_url,
+                createdAt: tData.created_at || new Date().toISOString()
               });
             }
           }
@@ -493,12 +497,16 @@ export default function ClientForm() {
                         </div>
 
                         {/* Document Content */}
-                        <div className="font-semibold leading-[2.5] whitespace-pre-wrap text-[17px] text-justify min-h-[400px]" style={{ color: '#000000' }}>
-                          {template.content
-                            .replace(/{{employeeName}}/g, request.employeeName || '____________')
-                            .replace(/{{department}}/g, request.department || '____________')
-                            .replace(/{{jobTitle}}/g, request.jobTitle || '____________')}
-                        </div>
+                        <div className="font-semibold leading-[2.5] whitespace-pre-wrap text-[17px] text-justify min-h-[400px]" style={{ color: '#000000' }}
+                             dangerouslySetInnerHTML={{
+                               __html: template.content ? DOMPurify.sanitize(renderTemplateContent(
+                                 template.content,
+                                 template.name,
+                                 request.templateData || {},
+                                 request.employeeName
+                               )) : ''
+                             }}
+                        />
 
                         {/* Document Footer (Signatures) */}
                         <div className="mt-16 pt-8 grid grid-cols-2 gap-8">

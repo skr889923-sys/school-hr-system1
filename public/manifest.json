@@ -1,0 +1,26 @@
+{
+  "name": "نظام إدارة الموارد البشرية - مدرسة الأمير سعود",
+  "short_name": "HR System",
+  "description": "نظام إدارة الموارد البشرية الإلكتروني لمدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة بالدمام",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FAF9F6",
+  "theme_color": "#1e293b",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -29,31 +29,43 @@ function App() {
       if (session?.user) {
         setIsAuthenticated(true);
         try {
-          const { data: userData, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('uid', session.user.id)
-            .single();
-
-          if (userData) {
-            setUserRole(userData.role as UserRole);
-          } else {
-            // Create default user doc if not exists
-            const email = session.user.email || '';
-            let defaultRole: UserRole = 'employee'; // Default to employee
-            if (email.includes('principal')) defaultRole = 'principal';
-            else if (email.includes('hr')) defaultRole = 'hr_manager';
-            else if (email.includes('support') || email.includes('it')) defaultRole = 'it_support';
-
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert({
-                uid: session.user.id,
-                email: email,
-                role: defaultRole
-              });
+          // Check employees table first
+          const { data: employeeData, error: employeeError } = await supabase
+            .from('employees')
+            .select('role')
+            .eq('auth_user_id', session.user.id)
+            .maybeSingle();
             
-            setUserRole(defaultRole);
+          if (employeeData && !employeeError) {
+            setUserRole(employeeData.role as UserRole);
+          } else {
+            // Fallback to legacy users table
+            const { data: userData, error: fetchError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('uid', session.user.id)
+              .maybeSingle();
+
+            if (userData) {
+              setUserRole(userData.role as UserRole);
+            } else {
+              // Create default user doc if not exists
+              const email = session.user.email || '';
+              let defaultRole: UserRole = 'employee'; // Default to employee
+              if (email.includes('principal')) defaultRole = 'principal';
+              else if (email.includes('hr')) defaultRole = 'hr_manager';
+              else if (email.includes('support') || email.includes('it')) defaultRole = 'it_support';
+
+              await supabase
+                .from('users')
+                .insert({
+                  uid: session.user.id,
+                  email: email,
+                  role: defaultRole
+                });
+              
+              setUserRole(defaultRole);
+            }
           }
         } catch (error) {
           console.error("Error fetching user role:", error);

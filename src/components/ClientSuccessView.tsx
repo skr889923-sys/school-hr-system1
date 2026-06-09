@@ -111,69 +111,69 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
 
       {/* Hidden/Printable Receipt Area */}
       <div className="absolute -left-[9999px] top-0 w-[800px] print:static print:w-auto">
-        <div id="client-receipt-print" className="bg-white p-10 font-sans text-slate-900 border border-slate-200 shadow-sm rounded-xl" dir="rtl">
-          <div className="border-b-2 border-slate-900 pb-6 mb-8 flex justify-between items-end">
+        <div id="client-receipt-print" className="p-10 font-sans shadow-sm rounded-xl" style={{ backgroundColor: '#ffffff', color: '#0f172a', borderColor: '#e2e8f0', borderWidth: 1, borderStyle: 'solid' }} dir="rtl">
+          <div className="pb-6 mb-8 flex justify-between items-end" style={{ borderBottomWidth: 2, borderColor: '#0f172a', borderStyle: 'solid' }}>
             <div>
-              <h1 className="text-xl font-black text-slate-900 mb-1">مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة</h1>
-              <p className="text-[12px] text-slate-500 font-bold">إدارة شؤون الموظفين - إشعار استلام إلكتروني</p>
+              <h1 className="text-xl font-black mb-1" style={{ color: '#0f172a' }}>مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة</h1>
+              <p className="text-[12px] font-bold" style={{ color: '#64748b' }}>إدارة شؤون الموظفين - إشعار استلام إلكتروني</p>
             </div>
             <div className="text-left" dir="ltr">
-              <h2 className="text-lg font-black uppercase text-slate-900 mb-1">HR Request</h2>
-              <div className="text-sm font-mono text-slate-500">
-                ID: <span className="font-bold text-slate-900">{request.id}</span>
+              <h2 className="text-lg font-black uppercase mb-1" style={{ color: '#0f172a' }}>HR Request</h2>
+              <div className="text-sm font-mono" style={{ color: '#64748b' }}>
+                ID: <span className="font-bold" style={{ color: '#0f172a' }}>{request.id}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8">
-            <h3 className="font-bold text-lg mb-4 border-b border-slate-200 pb-2">تفاصيل الموظف والرد</h3>
+          <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1, borderStyle: 'solid' }}>
+            <h3 className="font-bold text-lg mb-4 pb-2" style={{ borderBottomWidth: 1, borderColor: '#e2e8f0', borderStyle: 'solid' }}>تفاصيل الموظف والرد</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="block text-slate-500 mb-1">اسم الموظف:</span>
-                <span className="font-bold text-slate-900">{request.employeeName}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>اسم الموظف:</span>
+                <span className="font-bold" style={{ color: '#0f172a' }}>{request.employeeName}</span>
               </div>
               <div>
-                <span className="block text-slate-500 mb-1">الرقم الوظيفي:</span>
-                <span className="font-bold text-slate-900">{request.employeeId}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>الرقم الوظيفي:</span>
+                <span className="font-bold" style={{ color: '#0f172a' }}>{request.employeeId}</span>
               </div>
               <div>
-                <span className="block text-slate-500 mb-1">القسم / المرحلة:</span>
-                <span className="font-bold text-slate-900">{request.department || '-'}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>القسم / المرحلة:</span>
+                <span className="font-bold" style={{ color: '#0f172a' }}>{request.department || '-'}</span>
               </div>
               <div>
-                <span className="block text-slate-500 mb-1">تاريخ التقديم:</span>
-                <span className="font-bold text-slate-900">{new Date(request.createdAt).toLocaleDateString('ar-SA')}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>تاريخ التقديم:</span>
+                <span className="font-bold" style={{ color: '#0f172a' }}>{new Date(request.createdAt).toLocaleDateString('ar-SA')}</span>
               </div>
               <div className="col-span-2">
-                <span className="block text-slate-500 mb-1">نوع الإجراء:</span>
-                <span className="font-bold text-slate-900 bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{request.requestType}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>نوع الإجراء:</span>
+                <span className="font-bold px-2 py-0.5 rounded text-xs" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{request.requestType}</span>
               </div>
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-xl p-6 mb-8">
-            <h3 className="font-bold text-lg mb-4 border-b border-slate-200 pb-2">البيانات الإضافية والمبررات</h3>
+          <div className="rounded-xl p-6 mb-8" style={{ borderColor: '#e2e8f0', borderWidth: 1, borderStyle: 'solid' }}>
+            <h3 className="font-bold text-lg mb-4 pb-2" style={{ borderBottomWidth: 1, borderColor: '#e2e8f0', borderStyle: 'solid' }}>البيانات الإضافية والمبررات</h3>
             <div className="text-sm">
               {request.startDate && (
                 <div className="mb-3">
-                  <span className="block text-slate-500 mb-1">تاريخ البدء:</span>
-                  <span className="font-bold text-slate-900">{request.startDate}</span>
+                  <span className="block mb-1" style={{ color: '#64748b' }}>تاريخ البدء:</span>
+                  <span className="font-bold" style={{ color: '#0f172a' }}>{request.startDate}</span>
                 </div>
               )}
               {request.endDate && (
                 <div className="mb-3">
-                  <span className="block text-slate-500 mb-1">تاريخ الانتهاء:</span>
-                  <span className="font-bold text-slate-900">{request.endDate}</span>
+                  <span className="block mb-1" style={{ color: '#64748b' }}>تاريخ الانتهاء:</span>
+                  <span className="font-bold" style={{ color: '#0f172a' }}>{request.endDate}</span>
                 </div>
               )}
               <div>
-                <span className="block text-slate-500 mb-1">المبررات / التفاصيل:</span>
-                <span className="font-bold text-slate-900 whitespace-pre-wrap">{request.justification}</span>
+                <span className="block mb-1" style={{ color: '#64748b' }}>المبررات / التفاصيل:</span>
+                <span className="font-bold whitespace-pre-wrap" style={{ color: '#0f172a' }}>{request.justification}</span>
               </div>
             </div>
           </div>
 
-          <div className="text-center text-sm text-slate-500 mt-12 pt-6 border-t border-slate-200">
+          <div className="text-center text-sm mt-12 pt-6" style={{ color: '#64748b', borderTopWidth: 1, borderColor: '#e2e8f0', borderStyle: 'solid' }}>
             <p>هذا إشعار إلكتروني لإثبات استلام الرد عبر البوابة الداخلية للمدرسة.</p>
             <p className="mt-2 font-mono text-xs">Generated via HR Portal</p>
           </div>
