@@ -530,11 +530,8 @@ export default function ClientForm() {
                             <p className="font-bold text-sm text-black">إدارة التعليم بالمنطقة الشرقية</p>
                             <p className="font-bold text-sm text-black">مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة بالدمام</p>
                           </div>
-                          <div className="text-center w-24">
-                            {/* Placeholder for Ministry Logo if needed */}
-                            <div className="w-16 h-16 border-2 border-slate-300 rounded-full mx-auto flex items-center justify-center opacity-20">
-                              <span className="text-[8px] font-bold">شعار الوزارة</span>
-                            </div>
+                          <div className="text-center w-24 flex items-center justify-center">
+                            <img src="/logo.png" alt="شعار الوزارة" className="w-20 object-contain mx-auto" />
                           </div>
                           <div className="text-left space-y-1">
                             <p className="text-xs text-slate-600 font-bold">الرقم: {request.id}</p>
