@@ -9,9 +9,9 @@ import { EmployeeRequest } from './types';
 // 3. Public Key
 // ==========================================
 
-const EMAILJS_SERVICE_ID = 'DUMMY_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = 'DUMMY_TEMPLATE_ID';
-const EMAILJS_PUBLIC_KEY = 'DUMMY_PUBLIC_KEY';
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'DUMMY_SERVICE_ID';
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'DUMMY_TEMPLATE_ID';
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'DUMMY_PUBLIC_KEY';
 const ADMIN_EMAIL = 'T157606@estb.moe.gov.sa';
 
 /**
