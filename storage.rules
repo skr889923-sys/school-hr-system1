@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Anyone can upload if it's a request file (we don't enforce auth since clients are anonymous)
+      // They can also read anything if they have the link
+      allow read, write: if true;
+    }
+  }
+}

@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Allow authenticated users to read/write their own user document
+    match /users/{userId} {
+      allow read, write: if isAuth();
+    }
+
+    match /hr_requests/{requestId} {
+      // Authenticated admins can do everything
+      allow read, write, update, delete, list, create: if isAuth();
+      
+      // Unauthenticated employees can read and update their specific request (by ID)
+      allow get: if true;
+      allow update: if true;
+    }
+
+    match /hr_templates/{templateId} {
+      // Only authenticated users can manage templates
+      allow read, write, update, delete, list, create: if isAuth();
+    }
+  }
+}

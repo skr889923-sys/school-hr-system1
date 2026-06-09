@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "ProductionRequest": {
+      "title": "Production Request",
+      "description": "A tech pack request",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who created it" },
+        "id": { "type": "string" },
+        "designId": { "type": "string" },
+        "brandName": { "type": "string" },
+        "date": { "type": "string" },
+        "designName": { "type": "string" },
+        "designFile": { "type": "object" },
+        "additionalFiles": { "type": "array" },
+        "designNotes": { "type": "string" },
+        "selectedProducts": { "type": "array" },
+        "generalExecutionType": { "type": "string" },
+        "markers": { "type": "array" },
+        "quantities": { "type": "object" },
+        "useWashaColors": { "type": "string" },
+        "requestedColors": { "type": "string" },
+        "finalNotes": { "type": "string" },
+        "agreedToTerms": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "timestamp" },
+        "status": { "type": "string", "enum": ["draft", "submitted", "approved"] }
+      },
+      "required": ["userId", "id", "designId", "brandName", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "requests/{requestId}": {
+      "schema": { "$ref": "#/entities/ProductionRequest" },
+      "description": "Tech pack requests created by users"
+    }
+  }
+}

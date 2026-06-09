@@ -1,0 +1,6 @@
+{
+  "name": "WASHA Fashion Production Form",
+  "description": "استمارة طلب تنفيذ وتصنيع الملابس الجاهزة والمنتجات لبراندات الأزياء - شركة وشى (WASHA)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
