@@ -70,9 +70,11 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
         <div className="bg-blue-100 text-blue-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 shadow-sm relative z-10">
           <CheckCircle size={40} />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-4 relative z-10">تم إرسال طلبك بنجاح!</h2>
-        <p className="text-slate-600 font-medium text-lg mb-8 max-w-md relative z-10">
-          شكراً لك يا <span className="font-bold text-slate-900">{request.employeeName}</span>. لقد استلمنا طلبك (رقم <span className="font-bold text-slate-900">{request.id}</span>). سيقوم قسم الموارد البشرية بمراجعته والتواصل معك.
+        <h2 className="text-3xl font-black text-slate-900 mb-4 relative z-10">تم إرسال ردكم بنجاح</h2>
+        <p className="text-slate-600 font-medium text-lg mb-8 max-w-md relative z-10 leading-relaxed">
+          الزميل المكرّم <span className="font-bold text-slate-900">{request.employeeName}</span>،<br />
+          لقد تلقينا ردكم الموقّر (رقم <span className="font-bold text-slate-900">{request.id}</span>). سيتم إحالته للجهات المختصة للمراجعة واتخاذ اللازم.<br />
+          نُثمّن لكم تعاونكم وحرصكم الدائم.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full justify-center">
@@ -81,7 +83,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
             className="flex items-center justify-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-8 py-4 rounded-xl shadow-sm transition-colors cursor-pointer"
           >
             <Printer size={20} />
-            <span>طباعة الإيصال</span>
+            <span>طباعة</span>
           </button>
           
           {request.finalPdfUrl ? (
@@ -92,7 +94,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
               className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-8 py-4 rounded-xl shadow-md transition-colors cursor-pointer"
             >
               <FileDown size={20} />
-              <span>تحميل المستند (PDF)</span>
+              <span>حفظ</span>
             </a>
           ) : (
             <button
@@ -101,7 +103,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
               className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl shadow-md transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isGeneratingPdf ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-              <span>تحميل الإيصال (PDF)</span>
+              <span>حفظ</span>
             </button>
           )}
         </div>
@@ -113,7 +115,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
           <div className="border-b-2 border-slate-900 pb-6 mb-8 flex justify-between items-end">
             <div>
               <h1 className="text-xl font-black text-slate-900 mb-1">مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة</h1>
-              <p className="text-[12px] text-slate-500 font-bold">إدارة شؤون الموظفين - إيصال طلب إلكتروني</p>
+              <p className="text-[12px] text-slate-500 font-bold">إدارة شؤون الموظفين - إشعار استلام إلكتروني</p>
             </div>
             <div className="text-left" dir="ltr">
               <h2 className="text-lg font-black uppercase text-slate-900 mb-1">HR Request</h2>
@@ -124,7 +126,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8">
-            <h3 className="font-bold text-lg mb-4 border-b border-slate-200 pb-2">تفاصيل الموظف والطلب</h3>
+            <h3 className="font-bold text-lg mb-4 border-b border-slate-200 pb-2">تفاصيل الموظف والرد</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="block text-slate-500 mb-1">اسم الموظف:</span>
@@ -139,11 +141,11 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
                 <span className="font-bold text-slate-900">{request.department || '-'}</span>
               </div>
               <div>
-                <span className="block text-slate-500 mb-1">تاريخ تقديم الطلب:</span>
+                <span className="block text-slate-500 mb-1">تاريخ التقديم:</span>
                 <span className="font-bold text-slate-900">{new Date(request.createdAt).toLocaleDateString('ar-SA')}</span>
               </div>
               <div className="col-span-2">
-                <span className="block text-slate-500 mb-1">نوع الطلب:</span>
+                <span className="block text-slate-500 mb-1">نوع الإجراء:</span>
                 <span className="font-bold text-slate-900 bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{request.requestType}</span>
               </div>
             </div>
@@ -172,7 +174,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
           </div>
 
           <div className="text-center text-sm text-slate-500 mt-12 pt-6 border-t border-slate-200">
-            <p>هذا إيصال إلكتروني لإثبات تقديم الطلب عبر البوابة الداخلية للمدرسة.</p>
+            <p>هذا إشعار إلكتروني لإثبات استلام الرد عبر البوابة الداخلية للمدرسة.</p>
             <p className="mt-2 font-mono text-xs">Generated via HR Portal</p>
           </div>
         </div>
