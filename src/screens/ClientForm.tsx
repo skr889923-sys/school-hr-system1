@@ -521,34 +521,34 @@ export default function ClientForm() {
                   <div className="sm:col-span-2 mb-6">
                     <h4 className="text-sm font-bold text-slate-700 mb-3">محتوى الخطاب / الإجراء:</h4>
                     {template.type === 'text' && template.content ? (
-                      <div className="bg-white border border-slate-300 shadow-md p-8 sm:p-12 rounded-none mx-auto max-w-[210mm] min-h-[297mm] relative" style={{ aspectRatio: '210/297' }}>
+                      <div id="pdf-content-wrapper" className="shadow-md p-8 sm:p-12 rounded-none mx-auto max-w-[210mm] min-h-[297mm] relative" style={{ aspectRatio: '210/297', backgroundColor: '#ffffff', color: '#000000', border: '1px solid #cbd5e1' }}>
                         {/* A4 Document Header */}
-                        <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-8">
+                        <div className="flex justify-between items-start pb-4 mb-8" style={{ borderBottom: '2px solid #1e293b' }}>
                           <div className="text-right space-y-1">
-                            <p className="font-bold text-sm text-black">المملكة العربية السعودية</p>
-                            <p className="font-bold text-sm text-black">وزارة التعليم</p>
-                            <p className="font-bold text-sm text-black">إدارة التعليم بالمنطقة الشرقية</p>
-                            <p className="font-bold text-sm text-black">مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة بالدمام</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>المملكة العربية السعودية</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>وزارة التعليم</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>إدارة التعليم بالمنطقة الشرقية</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة بالدمام</p>
                           </div>
                           <div className="text-center w-24 flex items-center justify-center">
                             <img src="/logo.png" alt="شعار الوزارة" className="w-20 object-contain mx-auto" />
                           </div>
                           <div className="text-left space-y-1">
-                            <p className="text-xs text-slate-600 font-bold">الرقم: {request.id}</p>
-                            <p className="text-xs text-slate-600 font-bold">التاريخ: {new Date(request.createdAt).toLocaleDateString('ar-SA')}</p>
-                            <p className="text-xs text-slate-600 font-bold">المرفقات: {request.attachments?.length || 'لا يوجد'}</p>
+                            <p className="text-xs font-bold" style={{ color: '#475569' }}>الرقم: {request.id}</p>
+                            <p className="text-xs font-bold" style={{ color: '#475569' }}>التاريخ: {new Date(request.createdAt).toLocaleDateString('ar-SA')}</p>
+                            <p className="text-xs font-bold" style={{ color: '#475569' }}>المرفقات: {request.attachments?.length || 'لا يوجد'}</p>
                           </div>
                         </div>
 
                         {/* Document Title */}
                         <div className="text-center mb-8">
-                          <h2 className="text-xl font-black text-black underline underline-offset-8 decoration-2">
+                          <h2 className="text-xl font-black underline underline-offset-8 decoration-2" style={{ color: '#000000' }}>
                             {request.requestType}
                           </h2>
                         </div>
 
                         {/* Document Content */}
-                        <div className="text-black font-semibold leading-loose whitespace-pre-wrap text-base text-justify min-h-[400px]">
+                        <div className="font-semibold leading-loose whitespace-pre-wrap text-base text-justify min-h-[400px]" style={{ color: '#000000' }}>
                           {template.content
                             .replace(/{{employeeName}}/g, request.employeeName || '____________')
                             .replace(/{{department}}/g, request.department || '____________')
@@ -556,19 +556,19 @@ export default function ClientForm() {
                         </div>
 
                         {/* Document Footer (Signatures) */}
-                        <div className="mt-16 pt-8 grid grid-cols-2 gap-8 text-black">
+                        <div className="mt-16 pt-8 grid grid-cols-2 gap-8">
                           <div className="text-center space-y-8">
-                            <p className="font-bold text-sm">توقيع الموظف:</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>توقيع الموظف:</p>
                             {request.signatureData ? (
                               <img src={request.signatureData} alt="توقيع الموظف" className="h-16 mx-auto object-contain mix-blend-multiply" />
                             ) : (
-                              <p className="text-slate-400 text-xs italic">سيتم إرفاق التوقيع إلكترونياً عند التقديم</p>
+                              <p className="text-xs italic" style={{ color: '#94a3b8' }}>سيتم إرفاق التوقيع إلكترونياً عند التقديم</p>
                             )}
                           </div>
                           <div className="text-center space-y-8">
-                            <p className="font-bold text-sm">مدير المدرسة:</p>
+                            <p className="font-bold text-sm" style={{ color: '#000000' }}>مدير المدرسة:</p>
                             <div className="h-16 flex items-center justify-center">
-                              <p className="text-slate-400 text-[10px] italic border border-dashed border-slate-300 p-2">
+                              <p className="text-[10px] italic border border-dashed p-2" style={{ color: '#94a3b8', borderColor: '#cbd5e1' }}>
                                 (سيتم إرفاق توقيع مدير المدرسة من واجهة الإدارة لاحقاً)
                               </p>
                             </div>

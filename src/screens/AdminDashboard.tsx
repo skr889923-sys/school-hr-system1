@@ -213,10 +213,8 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         updated_at: new Date().toISOString()
       };
       
-      if (newStatus === 'rejected') {
-        updatePayload.rejection_reason = rejectionReason || 'بدون سبب';
-        updatePayload.rejected_by_role = userRole;
-      }
+      // If rejected, the reason is already tracked in the audit_trail
+      // We can also optionally append it to adminNotes if we want, but audit_trail is sufficient.
 
       await supabase.from('hr_requests').update(updatePayload).eq('id', reqId);
       

@@ -21,7 +21,7 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
         setLoading(true);
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData.session?.user) {
-          const { data } = await supabase.from('users').select('signature_data, signatureData').eq('uid', sessionData.session.user.id).maybeSingle();
+          const { data } = await supabase.from('users').select('signature_data').eq('uid', sessionData.session.user.id).maybeSingle();
           if (data) {
             setExistingSig(data.signature_data || data.signatureData);
           }
@@ -54,7 +54,7 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
 
     setSaving(true);
     try {
-      await supabase.from('users').update({ signature_data: base64Sig, signatureData: base64Sig }).eq('uid', user.id);
+      await supabase.from('users').update({ signature_data: base64Sig }).eq('uid', user.id);
       alert('تم حفظ التوقيع بنجاح!');
       onClose();
     } catch (err) {
