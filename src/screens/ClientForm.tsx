@@ -371,7 +371,10 @@ export default function ClientForm() {
     return (
       <div className="min-h-screen bg-[#FAF9F6]">
         <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-end items-center">
-          <h1 className="text-xl font-black text-slate-800">شؤون الموظفين | مدرسة الأمير سعود</h1>
+          <div className="flex items-center gap-3">
+            <span className="font-black text-slate-800 text-lg">School System</span>
+            <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
+          </div>
         </header>
         <ClientSuccessView request={request} />
       </div>
@@ -382,7 +385,8 @@ export default function ClientForm() {
     <div className="min-h-screen bg-[#FAF9F6] text-slate-900 pb-16 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
       <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-end items-center">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-black text-slate-800">مدرسة الأمير سعود بن عبدالله بن جلوي</h1>
+          <span className="font-black text-slate-800 text-lg">School System</span>
+          <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
         </div>
       </header>
 

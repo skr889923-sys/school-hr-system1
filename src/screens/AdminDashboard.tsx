@@ -332,8 +332,9 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-slate-900 pb-16 font-sans selection:bg-blue-100 selection:text-blue-900">
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-between items-center flex-row-reverse">
-        <div className="flex items-center gap-4 flex-row-reverse">
-          <h1 className="text-xl font-black text-slate-800">شؤون الموظفين</h1>
+        <div className="flex items-center gap-3 flex-row-reverse">
+          <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
+          <h1 className="text-xl font-black text-slate-800">School System</h1>
           <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
           <span className="font-bold text-slate-800 text-sm hidden sm:block">لوحة التحكم</span>
         </div>

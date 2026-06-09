@@ -42,7 +42,8 @@ export default function AuthScreen() {
     <div className="min-h-screen bg-[#FAF9F6] text-slate-900 pb-16 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-end items-center">
         <div className="flex items-center gap-3">
-          <span className="font-black text-slate-800 text-lg">نظام شؤون الموظفين</span>
+          <span className="font-black text-slate-800 text-lg">School System</span>
+          <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
         </div>
       </header>
 
