@@ -56,9 +56,7 @@ export default function AuthScreen() {
         >
           <div className="bg-white rounded-2xl shadow-sm w-full max-w-md p-8 border border-slate-200">
             <div className="flex flex-col items-center justify-center mb-8">
-              <div className="bg-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl mb-4 shadow-sm">
-                HR
-              </div>
+              <img src="/logo.png" alt="شعار المدرسة" className="w-32 h-32 object-contain mb-4 drop-shadow-sm" />
               <h1 className="text-xl font-black text-slate-950 text-center">مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة</h1>
               <p className="text-xs text-slate-500 mt-2 font-medium">نظام إدارة الموارد البشرية - بوابة الإدارة</p>
             </div>
