@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import mammoth from 'mammoth';
 
 
 const quillModules = {
@@ -122,6 +123,14 @@ export default function TemplateManager() {
       
       setCreateModalOpen(false);
       resetForm();
+      
+      // Update local state immediately so user sees changes without refreshing
+      const newTmpl = { id, ...templateData, created_at: new Date().toISOString() };
+      if (editTemplateId) {
+        setTemplates(prev => prev.map(t => t.id === editTemplateId ? { ...t, ...templateData } as LetterTemplate : t));
+      } else {
+        setTemplates(prev => [newTmpl as unknown as LetterTemplate, ...prev]);
+      }
     } catch (err) {
       console.error(err);
       alert('حدث خطأ أثناء حفظ القالب');
@@ -174,9 +183,35 @@ export default function TemplateManager() {
     setPdfFile(null);
   };
 
+  const handleDocxImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const arrayBuffer = event.target?.result as ArrayBuffer;
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        setTextContent(result.value);
+        setTemplateType('text');
+        if (!templateName) {
+          setTemplateName(file.name.replace(/\.docx?$/i, ''));
+        }
+        setIsImporting(false);
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error(error);
+      alert('فشل استيراد ملف الوورد.');
+      setIsImporting(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذا القالب؟')) {
       await supabase.from('hr_templates').delete().eq('id', id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
     }
   };
 
@@ -278,18 +313,26 @@ export default function TemplateManager() {
 
                 {templateType === 'text' ? (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">محتوى القالب</label>
+                    <div className="flex justify-between items-end mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700">محتوى القالب</label>
+                      <label className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1">
+                        <Upload size={12} />
+                        استيراد من ملف Word (.docx)
+                        <input type="file" accept=".docx" className="hidden" onChange={handleDocxImport} />
+                      </label>
+                    </div>
                     <p className="text-[10px] text-slate-500 mb-2">استخدم المتغيرات الديناميكية مثل: <code className="bg-slate-100 px-1 rounded">[اسم الموظف]</code>، <code className="bg-slate-100 px-1 rounded">[الرقم الوظيفي]</code>، وسيطلب النظام تعبئتها قبل الإصدار.</p>
-                    <div className="bg-white rounded-lg border border-slate-300 overflow-hidden" dir="rtl">
-                      <ReactQuill 
-                        theme="snow" 
-                        value={textContent} 
-                        onChange={setTextContent} 
-                        modules={quillModules}
-                        formats={quillFormats}
-                        className="h-64"
-                        style={{ direction: 'rtl', textAlign: 'right' }}
-                      />
+                    <div className="quill-a4-wrapper" dir="rtl">
+                      <div className="quill-a4-editor bg-white rounded-lg">
+                        <ReactQuill 
+                          theme="snow" 
+                          value={textContent} 
+                          onChange={setTextContent} 
+                          modules={quillModules}
+                          formats={quillFormats}
+                          style={{ direction: 'rtl', textAlign: 'right' }}
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (

@@ -499,12 +499,19 @@ export default function ClientForm() {
                         {/* Document Content */}
                         <div className="font-semibold leading-[2.5] whitespace-pre-wrap text-[17px] text-justify min-h-[400px]" style={{ color: '#000000' }}
                              dangerouslySetInnerHTML={{
-                               __html: template.content ? DOMPurify.sanitize(renderTemplateContent(
-                                 template.content,
-                                 template.name,
-                                 request.templateData || {},
-                                 request.employeeName
-                               )) : ''
+                               __html: (request.templateData as any)?.customContent 
+                                 ? DOMPurify.sanitize(renderTemplateContent(
+                                     (request.templateData as any).customContent,
+                                     template.name,
+                                     request.templateData || {},
+                                     request.employeeName
+                                   ))
+                                 : template.content ? DOMPurify.sanitize(renderTemplateContent(
+                                     template.content,
+                                     template.name,
+                                     request.templateData || {},
+                                     request.employeeName
+                                   )) : ''
                              }}
                         />
 

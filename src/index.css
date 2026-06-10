@@ -73,3 +73,47 @@ body {
   border-bottom-right-radius: 0.5rem;
   border-color: #cbd5e1;
 }
+
+/* Custom A4 styling for Quill editor */
+.quill-a4-wrapper {
+  background-color: #e2e8f0;
+  padding: 30px 10px;
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+}
+
+.quill-a4-editor {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 210mm; /* A4 width */
+  min-height: 297mm; /* A4 height */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #cbd5e1 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.quill-a4-editor .ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-radius: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fafc;
+}
+
+.quill-a4-editor .ql-container.ql-snow {
+  border: none !important;
+  flex: 1;
+}
+
+.quill-a4-editor .ql-editor {
+  padding: 20mm; /* A4 standard margins */
+  font-size: 14pt;
+  line-height: 1.6;
+  min-height: calc(297mm - 42px);
+}
+

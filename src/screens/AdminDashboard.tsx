@@ -10,7 +10,31 @@ import { UserRole, LetterTemplate } from '../types';
 import ProfileSettings from '../components/ProfileSettings';
 import TemplateManager from '../components/TemplateManager';
 import UserManagement from '../components/UserManagement';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { getFieldsForTemplate, TemplateField } from '../utils/templateFields';
+
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'script': 'sub'}, { 'script': 'super' }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'indent': '-1'}, { 'indent': '+1' }],
+    [{ 'direction': 'rtl' }, { 'align': [] }],
+    ['link', 'clean']
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'color', 'background',
+  'script',
+  'list', 'bullet', 'indent',
+  'direction', 'align',
+  'link'
+];
 
 interface Employee {
   id: string;
@@ -42,6 +66,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [templateFieldData, setTemplateFieldData] = useState<Record<string, string>>({});
   const [currentTemplateFields, setCurrentTemplateFields] = useState<TemplateField[]>([]);
+  const [customTemplateContent, setCustomTemplateContent] = useState<string>('');
 
   useEffect(() => {
     document.title = "لوحة التحكم | نظام الموارد البشرية";
@@ -125,6 +150,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
     setNewReqData({ employeeName: '', employeeId: '', email: '', department: '', jobTitle: '', phone: '' });
     setTemplateFieldData({});
     setCurrentTemplateFields([]);
+    setCustomTemplateContent('');
     setCreateReqModalOpen(true);
   };
 
@@ -134,12 +160,15 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
     if (templateId) {
       const tmpl = templates.find(t => t.id === templateId);
       if (tmpl) {
+        setCustomTemplateContent(tmpl.content || '');
         const fields = getFieldsForTemplate(tmpl.name);
         setCurrentTemplateFields(fields);
       } else {
+        setCustomTemplateContent('');
         setCurrentTemplateFields([]);
       }
     } else {
+      setCustomTemplateContent('');
       setCurrentTemplateFields([]);
     }
   };
@@ -191,7 +220,10 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         attachments: [],
         agreed_to_terms: false,
         template_id: selectedTemplateId || null,
-        template_data: Object.keys(templateFieldData).length > 0 ? templateFieldData : null,
+        template_data: {
+          ...templateFieldData,
+          customContent: customTemplateContent
+        },
         created_at: newReq.createdAt,
         updated_at: newReq.updatedAt,
         audit_trail: newReq.auditTrail
@@ -655,6 +687,26 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                     ))}
                   </select>
                 </div>
+
+                {/* Editor for Template Content */}
+                {selectedTemplateId && templates.find(t => t.id === selectedTemplateId)?.type === 'text' && (
+                  <div className="pt-4 border-t border-slate-100 mt-4">
+                    <label className="block text-xs font-black text-blue-700 mb-1.5 flex items-center gap-1.5">📝 تحرير محتوى الخطاب المخصص لهذا الطلب</label>
+                    <p className="text-[10px] text-slate-500 mb-3">يمكنك تعديل النص قبل إرساله للموظف. ستبقى المتغيرات مثل <code className="bg-slate-100 px-1 rounded">[اسم الموظف]</code> أو تعبئة الحقول أدناه لتعمل تلقائياً.</p>
+                    <div className="quill-a4-wrapper" dir="rtl">
+                      <div className="quill-a4-editor bg-white rounded-lg">
+                        <ReactQuill 
+                          theme="snow" 
+                          value={customTemplateContent} 
+                          onChange={setCustomTemplateContent} 
+                          modules={quillModules}
+                          formats={quillFormats}
+                          style={{ direction: 'rtl', textAlign: 'right' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* حقول القالب الديناميكية */}
                 {currentTemplateFields.length > 0 && (
