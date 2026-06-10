@@ -470,19 +470,19 @@ export default function ClientForm() {
                 {template && (
                   <div className="mb-6 w-full overflow-x-auto py-2">
                     {template.type === 'text' && template.content ? (
-                      <div id="pdf-content-wrapper" className="shadow-lg rounded-sm mx-auto w-[210mm] min-h-[297mm] relative bg-white border border-slate-300 p-10 sm:p-14 transition-transform origin-top" style={{ color: '#000000' }}>
+                      <div id="pdf-content-wrapper" className="shadow-lg rounded-sm mx-auto w-full max-w-[210mm] min-h-auto sm:min-h-[297mm] relative bg-white border border-slate-300 p-6 sm:p-14 transition-transform origin-top" style={{ color: '#000000' }}>
                         {/* A4 Document Header */}
-                        <div className="flex justify-between items-start pb-4 mb-8 border-b-2 border-slate-900">
-                          <div className="text-right space-y-1">
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>المملكة العربية السعودية</p>
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>وزارة التعليم</p>
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>إدارة التعليم بالمنطقة الشرقية</p>
-                            <p className="font-bold text-sm" style={{ color: '#000000' }}>مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة بالدمام</p>
+                        <div className="flex justify-between items-start pb-4 mb-8 border-b-2 border-slate-900 flex-wrap gap-4">
+                          <div className="text-right space-y-1 order-2 sm:order-1">
+                            <p className="font-bold text-xs sm:text-sm" style={{ color: '#000000' }}>المملكة العربية السعودية</p>
+                            <p className="font-bold text-xs sm:text-sm" style={{ color: '#000000' }}>وزارة التعليم</p>
+                            <p className="font-bold text-xs sm:text-sm" style={{ color: '#000000' }}>إدارة التعليم بالمنطقة الشرقية</p>
+                            <p className="font-bold text-xs sm:text-sm" style={{ color: '#000000' }}>مدرسة الأمير سعود بن عبدالله بن جلوي المتوسطة</p>
                           </div>
-                          <div className="text-center w-24 flex items-center justify-center">
-                            <img src="/logo.png" alt="شعار الوزارة" className="w-20 object-contain mx-auto" />
+                          <div className="text-center w-full sm:w-24 flex items-center justify-center order-1 sm:order-2">
+                            <img src="/logo.png" alt="شعار الوزارة" className="w-16 sm:w-20 object-contain mx-auto" />
                           </div>
-                          <div className="text-left space-y-1">
+                          <div className="text-left space-y-1 order-3 w-full sm:w-auto mt-4 sm:mt-0">
                             <p className="text-xs font-bold" style={{ color: '#475569' }}>الرقم: {request.id}</p>
                             <p className="text-xs font-bold" style={{ color: '#475569' }}>التاريخ: {new Date(request.createdAt).toLocaleDateString('ar-SA')}</p>
                             <p className="text-xs font-bold" style={{ color: '#475569' }}>المرفقات: {request.attachments?.length || 'لا يوجد'}</p>
@@ -491,13 +491,13 @@ export default function ClientForm() {
 
                         {/* Document Title */}
                         <div className="text-center mb-8">
-                          <h2 className="text-2xl font-black underline underline-offset-8 decoration-2" style={{ color: '#000000' }}>
+                          <h2 className="text-xl sm:text-2xl font-black underline underline-offset-8 decoration-2" style={{ color: '#000000' }}>
                             {request.requestType}
                           </h2>
                         </div>
 
                         {/* Document Content */}
-                        <div className="font-semibold leading-[2.5] whitespace-pre-wrap text-[17px] text-justify min-h-[400px]" style={{ color: '#000000' }}
+                        <div className="ql-editor px-0 py-0 overflow-visible h-auto font-medium leading-[2] sm:leading-[2.5] text-base sm:text-[17px] text-justify min-h-[200px] sm:min-h-[400px]" style={{ color: '#000000' }}
                              dangerouslySetInnerHTML={{
                                __html: (request.templateData as any)?.customContent 
                                  ? DOMPurify.sanitize(renderTemplateContent(
@@ -516,9 +516,9 @@ export default function ClientForm() {
                         />
 
                         {/* Document Footer (Signatures) */}
-                        <div className="mt-16 pt-8 grid grid-cols-2 gap-8">
-                          <div className="text-center space-y-8">
-                            <p className="font-bold text-base" style={{ color: '#000000' }}>توقيع الموظف:</p>
+                        <div className="mt-12 sm:mt-16 pt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                          <div className="text-center space-y-4 sm:space-y-8">
+                            <p className="font-bold text-sm sm:text-base" style={{ color: '#000000' }}>توقيع الموظف:</p>
                             {request.signatureData ? (
                               <img src={request.signatureData} alt="توقيع الموظف" className="h-20 mx-auto object-contain mix-blend-multiply" />
                             ) : (
