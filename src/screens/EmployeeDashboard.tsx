@@ -72,7 +72,7 @@ export default function EmployeeDashboard() {
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'pending_employee_response': return { text: 'بانتظار ردك', color: 'bg-amber-100 text-amber-800', icon: <AlertCircle size={14} /> };
-      case 'submitted_by_employee': return { text: 'قيد مراجعة الموارد البشرية', color: 'bg-blue-100 text-blue-800', icon: <Clock size={14} /> };
+      case 'submitted_by_employee': return { text: 'قيد مراجعة مشرف المتابعة', color: 'bg-blue-100 text-blue-800', icon: <Clock size={14} /> };
       case 'forwarded_to_principal': return { text: 'قيد مراجعة الإدارة', color: 'bg-indigo-100 text-indigo-800', icon: <Clock size={14} /> };
       case 'approved': return { text: 'معتمد', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle2 size={14} /> };
       case 'rejected': return { text: 'مرفوض', color: 'bg-rose-100 text-rose-800', icon: <AlertCircle size={14} /> };

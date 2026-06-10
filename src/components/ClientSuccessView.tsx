@@ -70,11 +70,11 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
         <div className="bg-blue-100 text-blue-600 rounded-full w-20 h-20 flex items-center justify-center mb-6 shadow-sm relative z-10">
           <CheckCircle size={40} />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-4 relative z-10">تم إرسال ردكم بنجاح</h2>
+        <h2 className="text-3xl font-black text-slate-900 mb-4 relative z-10">تم الاستلام بنجاح</h2>
         <p className="text-slate-600 font-medium text-lg mb-8 max-w-md relative z-10 leading-relaxed">
           الزميل المكرّم <span className="font-bold text-slate-900">{request.employeeName}</span>،<br />
-          لقد تلقينا ردكم الموقّر (رقم <span className="font-bold text-slate-900">{request.id}</span>). سيتم إحالته للجهات المختصة للمراجعة واتخاذ اللازم.<br />
-          نُثمّن لكم تعاونكم وحرصكم الدائم.
+          لقد تم استلام نموذجكم بنجاح (رقم الطلب: <span className="font-bold text-slate-900">{request.id}</span>).<br />
+          نشكر لكم حرصكم وتعاونكم الدائم، ونتمنى لكم يوماً سعيداً.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full justify-center">

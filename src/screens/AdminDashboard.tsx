@@ -200,7 +200,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         action: 'CREATED',
         details: 'تم إصدار مساءلة/خطاب وتوجيهه للموظف' + (selectedTemplateId ? ` (مع قالب)` : ''),
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مدير الموارد البشرية' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
+        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
         timestamp: new Date().toISOString()
       }]
     };
@@ -278,7 +278,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         action: 'STATUS_CHANGE',
         details: `تم تغيير الحالة إلى: ${statusLabels[newStatus] || newStatus}${rejectionReason ? ` - السبب: ${rejectionReason}` : ''}`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مدير الموارد البشرية' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
+        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
         timestamp: new Date().toISOString()
       };
 
@@ -339,7 +339,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         action: 'FILE_UPLOAD',
         details: `تم إرفاق ملف إداري: ${file.name}`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مدير الموارد البشرية' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
+        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
         timestamp: new Date().toISOString()
       };
       const newAuditTrail = [...(req.auditTrail || []), auditEntry];
@@ -376,7 +376,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         action: 'FILE_DELETE',
         details: `تم حذف ملف إداري`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مدير الموارد البشرية' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
+        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
         timestamp: new Date().toISOString()
       };
       const newAuditTrail = [...(req.auditTrail || []), auditEntry];
@@ -503,7 +503,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-slate-600 hidden sm:block">
-              {userRole === 'hr_manager' ? 'مدير الموارد البشرية' : userRole === 'it_support' ? 'الدعم الفني' : 'مسؤول'}
+              {userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'it_support' ? 'الدعم الفني' : 'مسؤول'}
             </span>
             <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-black">
               {userRole === 'hr_manager' ? 'HR' : 'IT'}

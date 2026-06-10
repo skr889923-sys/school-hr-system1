@@ -411,7 +411,7 @@ export default function ClientForm() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-slate-200 pb-5">
             <div>
               <h2 className="text-2xl font-black text-slate-950 flex items-center gap-2">
-                <span>نموذج شؤون الموظفين (HR)</span>
+                <span>طلب رقم</span>
                 <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-mono">
                   {request.id}
                 </span>
@@ -433,16 +433,7 @@ export default function ClientForm() {
             
             {/* القسم 1: تفاصيل الطلب */}
             <div className="space-y-4">
-              <div className="border-r-4 border-blue-600 pr-3">
-                <h3 className="text-base font-extrabold text-[#1C1C1C]">القسم 1 — محتوى الخطاب / الإجراء</h3>
-              </div>
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 sm:p-6 space-y-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">نوع الطلب / الإجراء</label>
-                  <div className="w-full text-sm border border-slate-200 bg-slate-100 px-4 py-3 rounded-xl font-bold text-blue-900 cursor-not-allowed">
-                    {request.requestType || 'غير محدد'}
-                  </div>
-                </div>
 
                 {(request.requestType === 'طلب إجازة عادية/مرضية' || request.requestType === 'طلب استئذان') && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

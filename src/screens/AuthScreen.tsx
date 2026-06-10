@@ -46,7 +46,7 @@ export default function AuthScreen() {
           setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
         } else {
           if (err.message === 'NOT_FOUND_IN_EMPLOYEES') {
-            setError('البريد غير مسجل في النظام. يرجى مراجعة الموارد البشرية.');
+            setError('البريد غير مسجل في النظام. يرجى مراجعة مشرف المتابعة.');
           } else if (err.message === 'ALREADY_REGISTERED' || err.message?.includes('already registered')) {
             setError('هذا الحساب مسجل بالفعل، يرجى تسجيل الدخول.');
           } else {
