@@ -12,6 +12,8 @@ import {
 import ClientSuccessView from '../components/ClientSuccessView';
 import { renderTemplateContent } from '../utils/templateFields';
 import DOMPurify from 'dompurify';
+import PdfFormFiller from '../components/PdfFormFiller';
+import { PdfField } from '../types';
 
 import {
   Info,
@@ -33,6 +35,10 @@ export default function ClientForm() {
   
   // Real files chosen by user for uploading
   const [additionalFileBlobs, setAdditionalFileBlobs] = useState<File[]>([]);
+
+  const [pdfFieldValues, setPdfFieldValues] = useState<Record<string, string>>({});
+  const [pdfSignatures, setPdfSignatures] = useState<Record<string, string>>({});
+  const [parsedPdfFields, setParsedPdfFields] = useState<PdfField[]>([]);
 
   // References for Canvas Signature Drawer
   const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -85,6 +91,21 @@ export default function ClientForm() {
                 pdfUrl: tData.pdf_url,
                 createdAt: tData.created_at || new Date().toISOString()
               });
+              
+              if (tData.type === 'pdf' && tData.content) {
+                try {
+                  const fields = JSON.parse(tData.content);
+                  setParsedPdfFields(fields);
+                  
+                  // Initialize some default values if possible
+                  const defaults: Record<string, string> = {};
+                  fields.forEach((f: any) => {
+                    if (f.label.includes('اسم') && data.employee_name) defaults[f.id] = data.employee_name;
+                    if (f.label.includes('تاريخ')) defaults[f.id] = new Date().toISOString().split('T')[0];
+                  });
+                  setPdfFieldValues(defaults);
+                } catch (e) {}
+              }
             }
           }
         } else {
@@ -267,30 +288,31 @@ export default function ClientForm() {
 
       let finalPdfUrl = undefined;
       // Generate Template PDF if applicable
-      if (request.templateId && request.signatureData) {
-        try {
-          const { data: tmpl } = await supabase
-            .from('hr_templates')
-            .select('*')
-            .eq('id', request.templateId)
-            .single();
+      if (request.templateId && template) {
+        if (template.type === 'pdf' && template.pdfUrl) {
+          try {
+            const response = await fetch(template.pdfUrl);
+            const originalPdfBytes = await response.arrayBuffer();
+            let mergedPdfBytes = originalPdfBytes;
 
-          if (tmpl) {
-            if (tmpl.type === 'pdf' && tmpl.pdf_url && tmpl.signature_box) {
-              const response = await fetch(tmpl.pdf_url);
-              const originalPdfBytes = await response.arrayBuffer();
+            if (parsedPdfFields.length > 0) {
+              // Smart PDF Field Mapper
+              const { fillPdfFields } = await import('../utils/pdfFiller');
+              mergedPdfBytes = await fillPdfFields(originalPdfBytes, parsedPdfFields, pdfFieldValues, pdfSignatures);
+            } else if ((template as any).signatureBox && request.signatureData) {
+              // Legacy Signature Box
               const { stampSignatureOnPdf } = await import('../utils/pdfService');
-              const mergedPdfBytes = await stampSignatureOnPdf(originalPdfBytes, request.signatureData, tmpl.signature_box as any);
-              
-              const pdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-              const pdfFile = new File([pdfBlob], `signed_${id}.pdf`, { type: 'application/pdf' });
-              
-              const uploadResult = await uploadFile(pdfFile, id);
-              finalPdfUrl = uploadResult.downloadUrl;
+              mergedPdfBytes = await stampSignatureOnPdf(originalPdfBytes, request.signatureData, (template as any).signatureBox);
             }
+
+            const pdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+            const pdfFile = new File([pdfBlob], `signed_${id}.pdf`, { type: 'application/pdf' });
+            
+            const uploadResult = await uploadFile(pdfFile, id);
+            finalPdfUrl = uploadResult.downloadUrl;
+          } catch (err) {
+            console.error("Error merging PDF template:", err);
           }
-        } catch (err) {
-          console.error("Error merging PDF template:", err);
         }
       }
 
@@ -371,7 +393,7 @@ export default function ClientForm() {
   }
 
   // If the request is already submitted, show the success and ClientSuccessView for the client
-  if (request.status !== 'pending' && request.status !== 'pending_employee_response') {
+  if (request.status !== 'pending_employee_response') {
     return (
       <div className="min-h-screen bg-[#FAF9F6]">
         <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-between items-center">
@@ -527,12 +549,23 @@ export default function ClientForm() {
                         </div>
                       </div>
                     ) : template.type === 'pdf' && template.pdfUrl ? (
-                      <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4">
-                        <span className="text-sm font-bold text-slate-700">هذا الإجراء مرفق كملف PDF رسمي.</span>
-                        <a href={template.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md w-full sm:w-auto">
-                          <FileText size={20} /> عرض و طباعة الخطاب
-                        </a>
-                      </div>
+                      parsedPdfFields.length > 0 ? (
+                        <PdfFormFiller 
+                          pdfUrl={template.pdfUrl}
+                          fields={parsedPdfFields}
+                          fieldValues={pdfFieldValues}
+                          onFieldChange={(fid, val) => setPdfFieldValues(p => ({ ...p, [fid]: val }))}
+                          signatures={pdfSignatures}
+                          onSignatureChange={(fid, url) => setPdfSignatures(p => ({ ...p, [fid]: url || '' }))}
+                        />
+                      ) : (
+                        <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4">
+                          <span className="text-sm font-bold text-slate-700">هذا الإجراء مرفق كملف PDF رسمي.</span>
+                          <a href={template.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-md w-full sm:w-auto">
+                            <FileText size={20} /> عرض و طباعة الخطاب
+                          </a>
+                        </div>
+                      )
                     ) : null}
                   </div>
                 )}
@@ -613,32 +646,40 @@ export default function ClientForm() {
               </label>
 
               <div className="mt-4">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="block text-sm font-bold text-slate-700">التوقيع الإلكتروني <span className="text-slate-400 font-normal text-xs">(ارسم توقيعك في المربع أدناه)</span></label>
-                  <button type="button" onClick={clearSignature} className="text-[10px] text-rose-600 hover:text-white font-bold px-3 py-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-600 rounded-lg transition-colors">
-                    مسح وإعادة التوقيع
-                  </button>
-                </div>
-                <div className="border-2 border-slate-300 bg-slate-50 rounded-xl overflow-hidden touch-none relative shadow-inner">
-                  {!request.signatureData && !isDrawing && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <span className="text-slate-400 text-sm font-bold select-none border-2 border-dashed border-slate-300 px-6 py-2 rounded-xl">منطقة التوقيع الإلكتروني للموظف</span>
+                {parsedPdfFields.some(f => f.type === 'signature') ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-sm font-bold text-blue-700 text-center">لقد قمت بالتوقيع داخل النموذج (في الأعلى). لا حاجة لتوقيع إضافي هنا.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-end mb-2">
+                      <label className="block text-sm font-bold text-slate-700">التوقيع الإلكتروني <span className="text-slate-400 font-normal text-xs">(ارسم توقيعك في المربع أدناه)</span></label>
+                      <button type="button" onClick={clearSignature} className="text-[10px] text-rose-600 hover:text-white font-bold px-3 py-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-600 rounded-lg transition-colors">
+                        مسح وإعادة التوقيع
+                      </button>
                     </div>
-                  )}
-                  <canvas
-                    ref={signatureCanvasRef}
-                    width={800}
-                    height={200}
-                    className="w-full h-32 sm:h-40 cursor-crosshair bg-transparent relative z-10"
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={endDrawing}
-                    onMouseOut={endDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={endDrawing}
-                  />
-                </div>
+                    <div className="border-2 border-slate-300 bg-slate-50 rounded-xl overflow-hidden touch-none relative shadow-inner">
+                      {!request.signatureData && !isDrawing && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                          <span className="text-slate-400 text-sm font-bold select-none border-2 border-dashed border-slate-300 px-6 py-2 rounded-xl">منطقة التوقيع الإلكتروني للموظف</span>
+                        </div>
+                      )}
+                      <canvas
+                        ref={signatureCanvasRef}
+                        width={800}
+                        height={200}
+                        className="w-full h-32 sm:h-40 cursor-crosshair bg-transparent relative z-10"
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={endDrawing}
+                        onMouseOut={endDrawing}
+                        onTouchStart={startDrawing}
+                        onTouchMove={draw}
+                        onTouchEnd={endDrawing}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

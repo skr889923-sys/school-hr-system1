@@ -9,7 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import mammoth from 'mammoth';
-
+import PdfFieldMapper from './PdfFieldMapper';
+import { PdfField } from '../types';
 
 const quillModules = {
   toolbar: [
@@ -47,8 +48,8 @@ export default function TemplateManager() {
   const [templateType, setTemplateType] = useState<'text' | 'pdf'>('text');
   const [textContent, setTextContent] = useState('السلام عليكم ورحمة الله وبركاته،\nأفيدكم أنا الموظف {{employeeName}} ...');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [sigBox, setSigBox] = useState<SignatureBox>({ pageIndex: 0, x: 50, y: 50, width: 150, height: 60 });
-  const [preset, setPreset] = useState('bottom-left');
+  const [pdfFields, setPdfFields] = useState<PdfField[]>([]);
+  const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -82,12 +83,15 @@ export default function TemplateManager() {
     };
   }, []);
 
-  const handlePresetChange = (val: string) => {
-    setPreset(val);
-    if (val === 'bottom-left') setSigBox({ ...sigBox, x: 50, y: 50, width: 150, height: 60 });
-    if (val === 'bottom-right') setSigBox({ ...sigBox, x: 400, y: 50, width: 150, height: 60 });
-    if (val === 'bottom-center') setSigBox({ ...sigBox, x: 225, y: 50, width: 150, height: 60 });
-  };
+  useEffect(() => {
+    if (pdfFile) {
+      const url = URL.createObjectURL(pdfFile);
+      setLocalPdfUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setLocalPdfUrl(null);
+    }
+  }, [pdfFile]);
 
   const handleSave = async () => {
     if (!templateName) return alert('الرجاء إدخال اسم القالب');
@@ -106,9 +110,9 @@ export default function TemplateManager() {
       const templateData = {
         name: templateName,
         type: templateType,
-        content: templateType === 'text' ? textContent : null,
+        content: templateType === 'text' ? textContent : JSON.stringify(pdfFields),
         pdf_url: templateType === 'pdf' ? pdfUrl : null,
-        signature_box: templateType === 'pdf' ? sigBox : null,
+        signature_box: null, // deprecated
       };
 
       if (editTemplateId) {
@@ -169,7 +173,12 @@ export default function TemplateManager() {
     if (t.type === 'text') setTextContent(t.content || '');
     if (t.type === 'pdf') {
       setExistingPdfUrl(t.pdfUrl || null);
-      if (t.signatureBox) setSigBox(t.signatureBox);
+      try {
+        if (t.content) setPdfFields(JSON.parse(t.content));
+        else setPdfFields([]);
+      } catch (e) {
+        setPdfFields([]);
+      }
     }
     setCreateModalOpen(true);
   };
@@ -181,6 +190,7 @@ export default function TemplateManager() {
     setTemplateType('text');
     setTextContent('السلام عليكم ورحمة الله وبركاته،\nأفيدكم أنا الموظف {{employeeName}} ...');
     setPdfFile(null);
+    setPdfFields([]);
   };
 
   const handleDocxImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,10 +270,10 @@ export default function TemplateManager() {
                     {t.type === 'pdf' ? 'ملف PDF' : 'نص ديناميكي'}
                   </span>
                 </div>
-                {t.type === 'pdf' && (
+                {t.type === 'pdf' && t.content && (
                   <p className="text-[10px] text-slate-500 font-mono mt-2 flex items-center gap-1">
                     <Settings size={10} />
-                    مربع التوقيع: X:{t.signatureBox?.x} Y:{t.signatureBox?.y}
+                    يحتوي على إعدادات الحقول الذكية
                   </p>
                 )}
               </div>
@@ -342,40 +352,21 @@ export default function TemplateManager() {
                       {editTemplateId && existingPdfUrl && !pdfFile && (
                         <p className="text-[10px] text-green-600 mb-2 font-bold">✓ يوجد ملف PDF محفوظ حالياً. يمكنك رفع ملف جديد لاستبداله.</p>
                       )}
-                      <input type="file" accept="application/pdf" onChange={e => setPdfFile(e.target.files?.[0] || null)} className="w-full text-xs" />
+                      <input type="file" accept="application/pdf" onChange={e => setPdfFile(e.target.files?.[0] || null)} className="w-full text-xs bg-white border border-slate-200 p-2 rounded" />
                     </div>
                     
-                    <div className="pt-2 border-t border-slate-200">
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">موقع التوقيع الإلكتروني للموظف</label>
-                      <select value={preset} onChange={e => handlePresetChange(e.target.value)} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 mb-3 outline-none">
-                        <option value="bottom-left">أسفل اليسار</option>
-                        <option value="bottom-right">أسفل اليمين</option>
-                        <option value="bottom-center">أسفل المنتصف</option>
-                        <option value="custom">تخصيص (إحداثيات)</option>
-                      </select>
-                      
-                      {preset === 'custom' && (
-                        <div className="grid grid-cols-4 gap-2">
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">X (أفقي)</label>
-                            <input type="number" value={sigBox.x} onChange={e => setSigBox({...sigBox, x: +e.target.value})} className="w-full text-xs border border-slate-300 rounded px-2 py-1" />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">Y (عمودي)</label>
-                            <input type="number" value={sigBox.y} onChange={e => setSigBox({...sigBox, y: +e.target.value})} className="w-full text-xs border border-slate-300 rounded px-2 py-1" />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">العرض</label>
-                            <input type="number" value={sigBox.width} onChange={e => setSigBox({...sigBox, width: +e.target.value})} className="w-full text-xs border border-slate-300 rounded px-2 py-1" />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">الارتفاع</label>
-                            <input type="number" value={sigBox.height} onChange={e => setSigBox({...sigBox, height: +e.target.value})} className="w-full text-xs border border-slate-300 rounded px-2 py-1" />
-                          </div>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-amber-600 mt-2">* يتم احتساب الإحداثيات من الزاوية السفلية اليسرى للملف.</p>
-                    </div>
+                    {(localPdfUrl || existingPdfUrl) && (
+                      <div className="pt-4 border-t border-slate-200">
+                        <label className="block text-sm font-bold text-indigo-700 mb-3 flex items-center gap-2">
+                          <Settings size={16} /> إعداد حقول الـ PDF التفاعلية
+                        </label>
+                        <PdfFieldMapper 
+                          pdfUrl={localPdfUrl || existingPdfUrl!} 
+                          fields={pdfFields} 
+                          onChange={setPdfFields} 
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

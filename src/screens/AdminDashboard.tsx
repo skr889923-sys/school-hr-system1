@@ -188,7 +188,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       jobTitle: newReqData.jobTitle,
       phone: newReqData.phone,
       email: newReqData.email,
-      requestType: templates.find(t => t.id === selectedTemplateId)?.name || 'مساءلة',
+      requestType: (templates.find(t => t.id === selectedTemplateId)?.name as any) || 'خطابات',
       justification: '',
       attachments: [],
       agreedToTerms: false,

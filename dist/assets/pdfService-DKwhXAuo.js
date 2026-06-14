@@ -1,0 +1,1 @@
+import{P as c}from"./PDFButton-BQEBxnjH.js";import"./index-BLaYKSHZ.js";async function o(p,n,t){const a=await c.load(p),g=n.split(",")[1]||n;let e;try{e=await a.embedPng(g)}catch{e=await a.embedJpg(g)}const i=a.getPages(),s=Math.min(t.pageIndex,i.length-1);return i[s].drawImage(e,{x:t.x,y:t.y,width:t.width,height:t.height}),await a.save()}export{o as stampSignatureOnPdf};

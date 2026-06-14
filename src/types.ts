@@ -37,7 +37,7 @@ export interface EmployeeRequest {
   // Section 1: Employee Details
   employeeName: string;
   employeeId: string;
-  department: string;
+  department?: string;
   jobTitle: string;
   phone: string;
   email: string;
@@ -101,6 +101,19 @@ export interface SignatureBox {
   y: number;
   width: number;
   height: number;
+}
+
+export type PdfFieldType = 'text' | 'long-text' | 'date' | 'signature';
+
+export interface PdfField {
+  id: string;
+  type: PdfFieldType;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  page: number;
 }
 
 export interface LetterTemplate {

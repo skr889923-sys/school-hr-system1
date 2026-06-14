@@ -200,7 +200,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                        emp.role === 'admin' || emp.role === 'hr_manager' || emp.role === 'it_support' || emp.role === 'principal' 
+                        emp.role === 'hr_manager' || emp.role === 'it_support' || emp.role === 'principal' 
                           ? 'bg-purple-100 text-purple-700' 
                           : 'bg-emerald-100 text-emerald-700'
                       }`}>

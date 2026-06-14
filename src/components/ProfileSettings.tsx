@@ -23,7 +23,7 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
         if (sessionData.session?.user) {
           const { data } = await supabase.from('users').select('signature_data').eq('uid', sessionData.session.user.id).maybeSingle();
           if (data) {
-            setExistingSig(data.signature_data || data.signatureData);
+            setExistingSig(data.signature_data);
           }
         }
         setLoading(false);
