@@ -31,7 +31,7 @@ const quillFormats = [
   'bold', 'italic', 'underline', 'strike',
   'color', 'background',
   'script',
-  'list', 'bullet', 'indent',
+  'list', 'indent',
   'direction', 'align',
   'link'
 ];

@@ -28,7 +28,7 @@ const quillFormats = [
   'bold', 'italic', 'underline', 'strike',
   'color', 'background',
   'script',
-  'list', 'bullet', 'indent',
+  'list', 'indent',
   'direction', 'align',
   'link'
 ];
@@ -99,7 +99,7 @@ export default function TemplateManager() {
       let pdfUrl = existingPdfUrl || '';
 
       if (templateType === 'pdf' && pdfFile) {
-        const res = await uploadFile(pdfFile, `templates/${id}_${pdfFile.name}`);
+        const res = await uploadFile(pdfFile, `templates/${id}`);
         pdfUrl = res.downloadUrl;
       }
 
