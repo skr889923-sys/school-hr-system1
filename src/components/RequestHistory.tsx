@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { EmployeeRequest, UserRole } from '../types';
-import { FileText, Plus, Trash2, Calendar, ClipboardList, Copy, Eye, MessageCircle, Mail, FolderDown, History, X } from 'lucide-react';
+import { FileText, Plus, Trash2, Calendar, ClipboardList, Copy, Eye, MessageCircle, Mail, FolderDown, History, X, Lock } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { canTransitionRequest, getStatusMeta, isSubmittedContentLocked, statusToneClasses } from '../services/workflow';
 
 interface RequestHistoryProps {
   requests: EmployeeRequest[];
@@ -77,6 +78,13 @@ export default function RequestHistory({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {requests.map((req) => {
+              const canForward = !!onStatusChange && canTransitionRequest(userRole, req.status, 'forwarded_to_principal');
+              const canReturn = !!onStatusChange && canTransitionRequest(userRole, req.status, 'returned');
+              const canApprove = !!onStatusChange && canTransitionRequest(userRole, req.status, 'approved');
+              const canReject = !!onStatusChange && canTransitionRequest(userRole, req.status, 'rejected');
+              const canComplete = !!onStatusChange && canTransitionRequest(userRole, req.status, 'completed');
+              const canTakeAction = canForward || canReturn || canApprove || canReject || canComplete;
+              const contentLocked = isSubmittedContentLocked(req.status);
               return (
                 <div
                   key={req.id}
@@ -98,20 +106,15 @@ export default function RequestHistory({
                     </div>
 
                     <div className="flex flex-col items-end">
-                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md ${
-                        req.status === 'pending_employee_response' ? 'bg-slate-100 text-slate-600' :
-                        req.status === 'submitted_by_employee' ? 'bg-amber-100 text-amber-800' :
-                        req.status === 'forwarded_to_principal' ? 'bg-indigo-100 text-indigo-800' :
-                        req.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                        req.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-rose-100 text-rose-800'
-                      }`}>
-                        {req.status === 'pending_employee_response' ? 'بانتظار الموظف' :
-                         req.status === 'submitted_by_employee' ? 'قيد المراجعة' :
-                         req.status === 'forwarded_to_principal' ? 'لدى المدير' :
-                         req.status === 'approved' ? 'معتمد' :
-                         req.status === 'completed' ? 'مكتمل' : 'مرفوض'}
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md border ${statusToneClasses(req.status)}`}>
+                        {getStatusMeta(req.status).shortLabel}
                       </span>
+                      {contentLocked && (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700">
+                          <Lock size={10} />
+                          المحتوى مقفل
+                        </span>
+                      )}
                       {req.status === 'rejected' && req.rejectionReason && (
                         <span className="text-[9px] text-rose-500 mt-1 max-w-[150px] truncate" title={req.rejectionReason}>
                           السبب: {req.rejectionReason}
@@ -172,33 +175,34 @@ export default function RequestHistory({
                       <div className="pt-2 border-t border-slate-200">
                         <label className="block text-[10px] text-slate-500 mb-1.5 font-bold">اتخاذ قرار (الإدارة):</label>
                         <div className="flex flex-wrap gap-2">
-                          {(userRole === 'hr_manager' || userRole === 'it_support') && req.status === 'submitted_by_employee' && (
-                            <>
-                              <button onClick={() => onStatusChange(req.id, 'approved')} className="text-[10px] px-3 py-1.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold transition-colors">اعتماد</button>
-                              <button onClick={() => onStatusChange(req.id, 'forwarded_to_principal')} className="text-[10px] px-3 py-1.5 rounded bg-indigo-100 text-indigo-800 hover:bg-indigo-200 font-bold transition-colors">رفع لمدير المدرسة</button>
-                              <button onClick={() => {
-                                const reason = window.prompt('الرجاء إدخال سبب الرفض:');
-                                if (reason) onStatusChange(req.id, 'rejected', reason);
-                              }} className="text-[10px] px-3 py-1.5 rounded bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold transition-colors">رفض</button>
-                            </>
+                          {canForward && (
+                            <button onClick={() => onStatusChange(req.id, 'forwarded_to_principal')} className="text-[10px] px-3 py-1.5 rounded bg-indigo-100 text-indigo-800 hover:bg-indigo-200 font-bold transition-colors">رفع لمدير المدرسة</button>
                           )}
-                          
-                          {userRole === 'principal' && req.status === 'forwarded_to_principal' && (
-                            <>
-                              <button onClick={() => onStatusChange(req.id, 'approved')} className="text-[10px] px-3 py-1.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold transition-colors">اعتماد (مدير المدرسة)</button>
-                              <button onClick={() => {
-                                const reason = window.prompt('الرجاء إدخال سبب الرفض:');
-                                if (reason) onStatusChange(req.id, 'rejected', reason);
-                              }} className="text-[10px] px-3 py-1.5 rounded bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold transition-colors">رفض (مدير المدرسة)</button>
-                            </>
+
+                          {canReturn && (
+                            <button onClick={() => {
+                              const reason = window.prompt('سبب الإعادة للتعديل:');
+                              if (reason) onStatusChange(req.id, 'returned', reason);
+                            }} className="text-[10px] px-3 py-1.5 rounded bg-amber-100 text-amber-800 hover:bg-amber-200 font-bold transition-colors">إعادة للتعديل</button>
                           )}
-                          
-                          {req.status === 'approved' && (userRole === 'hr_manager' || userRole === 'it_support') && (
+
+                          {canApprove && (
+                            <button onClick={() => onStatusChange(req.id, 'approved')} className="text-[10px] px-3 py-1.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold transition-colors">اعتماد مدير المدرسة</button>
+                          )}
+
+                          {canReject && (
+                            <button onClick={() => {
+                              const reason = window.prompt('الرجاء إدخال سبب الرفض:');
+                              if (reason) onStatusChange(req.id, 'rejected', reason);
+                            }} className="text-[10px] px-3 py-1.5 rounded bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold transition-colors">رفض</button>
+                          )}
+
+                          {canComplete && (
                             <button onClick={() => onStatusChange(req.id, 'completed')} className="text-[10px] px-3 py-1.5 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 font-bold transition-colors">إغلاق / حفظ في الأرشيف (مكتمل)</button>
                           )}
 
-                          {['approved', 'completed', 'rejected'].includes(req.status) && (
-                            <span className="text-[10px] text-slate-400 italic mt-1">تم اتخاذ القرار مسبقاً.</span>
+                          {!canTakeAction && (
+                            <span className="text-[10px] text-slate-400 italic mt-1">لا يوجد إجراء متاح لهذه الحالة.</span>
                           )}
                         </div>
                       </div>
@@ -227,6 +231,20 @@ export default function RequestHistory({
                           )
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {req.finalPdfUrl && (
+                    <div className="mb-4">
+                      <a
+                        href={req.finalPdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100 transition-colors"
+                      >
+                        <FolderDown size={14} />
+                        الخطاب النهائي PDF
+                      </a>
                     </div>
                   )}
 
@@ -276,7 +294,7 @@ export default function RequestHistory({
                         <button
                           onClick={() => onDeleteRequest(req.id)}
                           className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-rose-100 bg-white"
-                          title="حذف الطلب نهائياً"
+                          title="أرشفة الطلب"
                         >
                           <Trash2 size={13} />
                         </button>

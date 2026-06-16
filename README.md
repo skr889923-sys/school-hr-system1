@@ -1,20 +1,76 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# School HR System
 
-# Run and deploy your AI Studio app
+نظام عربي RTL لإدارة شؤون الموظفين والمعلمين داخل المدرسة: الطلبات، القوالب، نماذج PDF، التوقيع الإلكتروني داخل النظام، الموافقات، وسجل التدقيق.
 
-This contains everything you need to run your app locally.
+## المتطلبات
 
-View your app in AI Studio: https://ai.studio/apps/4c5cbf71-68b1-4a04-a055-b664a85ad79d
+- Node.js 22 أو إصدار حديث متوافق مع Vite.
+- مشروع Supabase يحتوي على الجداول الأساسية `employees`, `hr_requests`, `hr_templates`, `users`.
+- متغيرات البيئة:
 
-## Run Locally
+```bash
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_EMAILJS_SERVICE_ID=...      # اختياري
+VITE_EMAILJS_TEMPLATE_ID=...     # اختياري
+VITE_EMAILJS_PUBLIC_KEY=...      # اختياري
+```
 
-**Prerequisites:**  Node.js
+## التشغيل المحلي
 
+```bash
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+فحص TypeScript:
+
+```bash
+npm run lint
+```
+
+بناء الإنتاج:
+
+```bash
+npm run build
+```
+
+## قاعدة البيانات
+
+نفذ الـ migration الآمن التالي في Supabase SQL Editor:
+
+```sql
+-- migrations/20260614_hr_platform_upgrade.sql
+```
+
+الـ migration يضيف:
+
+- أعمدة تفعيل الحساب، آخر دخول، والتوقيع في `employees`.
+- أعمدة الأرشفة وسبب الرفض وربط المستخدم في `hr_requests`.
+- أرشفة القوالب عبر `active` بدلاً من الحذف.
+- جدول `audit_logs`.
+- جدول `notifications`.
+- فهارس للبحث حسب المستخدم، الحالة، القالب، والتاريخ.
+- سياسات RLS مبدئية للطلبات، القوالب، التدقيق، والإشعارات.
+
+## الأدوار المقترحة
+
+- `principal`: مدير المدرسة، يعتمد أو يرفض الطلبات ويدير الموظفين ويقرأ السجلات.
+- `hr_manager`: مشرف المتابعة، ينشئ الطلبات ويوجهها ويعيدها للتعديل ويدير الموظفين والقوالب.
+- `it_support`: الدعم الفني، يدير القوالب ويفحص السجلات ولا يملك اعتماداً إدارياً.
+- `employee`: الموظف أو المعلم، يرى طلباته فقط ويعبئ النماذج ويوقع داخل النظام.
+
+حسابات تجريبية مقترحة بعد إنشاء مستخدمي Supabase Auth وربطهم في جدول `employees`:
+
+- `principal@school.sa`
+- `hr@school.sa`
+- `support@school.sa`
+- `teacher@school.sa`
+
+## ملاحظات أمان
+
+- لا يتم منح صلاحية إدارية تلقائياً بناءً على البريد الإلكتروني.
+- التوقيع المستخدم هو توقيع إلكتروني داخل النظام مع سجل تدقيق، وليس شهادة رقمية قانونية متقدمة.
+- رفع الملفات محصور في PDF وDOCX وPNG وJPG مع حدود حجم.
+- حذف الطلبات والقوالب تحول إلى أرشفة لحماية السجل الإداري.
+- روابط تعبئة الطلبات عامة للمعلم ولا تتطلب تسجيل دخول. لذلك تولد الطلبات الجديدة بمعرف طويل غير قابل للتخمين، ويجب تنفيذ `migrations/20260614_public_request_links.sql` عند تفعيل RLS.

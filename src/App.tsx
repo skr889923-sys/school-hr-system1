@@ -8,6 +8,12 @@ import EmployeeDashboard from './screens/EmployeeDashboard';
 import ClientForm from './screens/ClientForm';
 import AuthScreen from './screens/AuthScreen';
 
+const ROLE_VALUES: UserRole[] = ['principal', 'hr_manager', 'it_support', 'employee', 'unassigned', 'system'];
+
+function normalizeRole(role: unknown): UserRole {
+  return ROLE_VALUES.includes(role as UserRole) ? role as UserRole : 'employee';
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -29,47 +35,50 @@ function App() {
       if (session?.user) {
         setIsAuthenticated(true);
         try {
-          // Check employees table first
           const { data: employeeData, error: employeeError } = await supabase
             .from('employees')
-            .select('role')
+            .select('*')
             .eq('auth_user_id', session.user.id)
             .maybeSingle();
             
           if (employeeData && !employeeError) {
-            setUserRole(employeeData.role as UserRole);
+            if ('active' in employeeData && employeeData.active === false) {
+              await supabase.auth.signOut();
+              setIsAuthenticated(false);
+              setUserRole(null);
+              return;
+            }
+
+            if ('last_login_at' in employeeData) {
+              await supabase
+                .from('employees')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('auth_user_id', session.user.id);
+            }
+            setUserRole(normalizeRole(employeeData.role));
           } else {
-            // Fallback to legacy users table
             const { data: userData, error: fetchError } = await supabase
               .from('users')
-              .select('*')
+              .select('role')
               .eq('uid', session.user.id)
               .maybeSingle();
 
-            if (userData) {
-              setUserRole(userData.role as UserRole);
+            if (userData && !fetchError) {
+              setUserRole(normalizeRole(userData.role));
             } else {
-              // Create default user doc if not exists
-              const email = session.user.email || '';
-              let defaultRole: UserRole = 'employee'; // Default to employee
-              if (email.includes('principal')) defaultRole = 'principal';
-              else if (email.includes('hr')) defaultRole = 'hr_manager';
-              else if (email.includes('support') || email.includes('it')) defaultRole = 'it_support';
-
               await supabase
                 .from('users')
                 .insert({
                   uid: session.user.id,
-                  email: email,
-                  role: defaultRole
+                  email: session.user.email || '',
+                  role: 'employee'
                 });
               
-              setUserRole(defaultRole);
+              setUserRole('employee');
             }
           }
         } catch (error) {
-          console.error("Error fetching user role:", error);
-          setUserRole('hr_manager'); // Fallback
+          setUserRole('employee');
         }
       } else {
         setIsAuthenticated(false);
@@ -79,7 +88,7 @@ function App() {
   }, []);
 
   if (isAuthenticated === null || (isAuthenticated && userRole === null)) {
-    return <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center text-blue-600 font-bold">جاري التحميل...</div>;
+    return <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center text-slate-700 font-bold">جاري تحميل الصلاحيات...</div>;
   }
 
   return (

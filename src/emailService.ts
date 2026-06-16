@@ -13,12 +13,16 @@ const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'DUMMY_SER
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'DUMMY_TEMPLATE_ID';
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'DUMMY_PUBLIC_KEY';
 const ADMIN_EMAIL = 'T157606@estb.moe.gov.sa';
+const isEmailConfigured = EMAILJS_SERVICE_ID !== 'DUMMY_SERVICE_ID'
+  && EMAILJS_TEMPLATE_ID !== 'DUMMY_TEMPLATE_ID'
+  && EMAILJS_PUBLIC_KEY !== 'DUMMY_PUBLIC_KEY';
 
 /**
  * دالة لإرسال إيميل عند استلام الطلب الجديد
  */
 export const sendOrderConfirmationEmail = async (request: EmployeeRequest) => {
   if (!request.email) return;
+  if (!isEmailConfigured) return;
 
   // القيم التي سيتم إرسالها إلى قالب الإيميل
   const templateParams = {
@@ -33,13 +37,12 @@ export const sendOrderConfirmationEmail = async (request: EmployeeRequest) => {
 
   try {
     // 1. إرسال الإيميل للموظف
-    const response = await emailjs.send(
+    await emailjs.send(
       EMAILJS_SERVICE_ID,
       EMAILJS_TEMPLATE_ID,
       templateParams,
       EMAILJS_PUBLIC_KEY
     );
-    console.log('تم إرسال إيميل الموظف بنجاح!', response.status, response.text);
 
     // 2. إرسال إيميل للإدارة
     const adminTemplateParams = {
@@ -54,9 +57,8 @@ export const sendOrderConfirmationEmail = async (request: EmployeeRequest) => {
       adminTemplateParams,
       EMAILJS_PUBLIC_KEY
     );
-    console.log('تم إرسال إيميل الإدارة بنجاح!');
   } catch (error) {
-    console.error('فشل في إرسال الإيميل:', error);
+    return;
   }
 };
 
@@ -65,6 +67,7 @@ export const sendOrderConfirmationEmail = async (request: EmployeeRequest) => {
  */
 export const sendOrderStatusUpdateEmail = async (request: EmployeeRequest, newStatusText: string) => {
   if (!request.email) return;
+  if (!isEmailConfigured) return;
 
   const templateParams = {
     employee_name: request.employeeName,
@@ -77,14 +80,13 @@ export const sendOrderStatusUpdateEmail = async (request: EmployeeRequest, newSt
   };
 
   try {
-    const response = await emailjs.send(
+    await emailjs.send(
       EMAILJS_SERVICE_ID,
       EMAILJS_TEMPLATE_ID, 
       templateParams,
       EMAILJS_PUBLIC_KEY
     );
-    console.log('تم إرسال إيميل تحديث الحالة بنجاح!', response.status, response.text);
   } catch (error) {
-    console.error('فشل في إرسال إيميل التحديث:', error);
+    return;
   }
 };

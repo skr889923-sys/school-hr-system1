@@ -31,6 +31,19 @@ export interface AttachmentFile {
   storagePath?: string; // path in Firebase storage to allow deletion
 }
 
+export type RequestStatus =
+  | 'draft'
+  | 'assigned'
+  | 'pending_employee_response'
+  | 'in_progress'
+  | 'submitted_by_employee'
+  | 'forwarded_to_principal'
+  | 'returned'
+  | 'approved'
+  | 'rejected'
+  | 'completed'
+  | 'archived';
+
 export interface EmployeeRequest {
   id: string; // auto-generated request code e.g. HR-1002
   
@@ -70,7 +83,7 @@ export interface EmployeeRequest {
   auditTrail?: AuditLogEntry[];
   
   createdAt: string;
-  status: 'pending_employee_response' | 'submitted_by_employee' | 'forwarded_to_principal' | 'approved' | 'rejected' | 'completed';
+  status: RequestStatus;
   rejectionReason?: string;
   rejectedByRole?: string;
   updatedAt?: string;
@@ -103,7 +116,20 @@ export interface SignatureBox {
   height: number;
 }
 
-export type PdfFieldType = 'text' | 'long-text' | 'date' | 'signature';
+export type PdfFieldType =
+  | 'text'
+  | 'long-text'
+  | 'date'
+  | 'number'
+  | 'select'
+  | 'checkbox'
+  | 'signature'
+  | 'employee-name'
+  | 'manager-name'
+  | 'current-date'
+  | 'request-number';
+
+export type PdfFieldAssignee = 'employee' | 'supervisor' | 'principal' | 'system';
 
 export interface PdfField {
   id: string;
@@ -114,6 +140,10 @@ export interface PdfField {
   width: number;
   height: number;
   page: number;
+  required?: boolean;
+  filledBy?: PdfFieldAssignee;
+  fontSize?: number;
+  options?: string[];
 }
 
 export interface LetterTemplate {
@@ -130,4 +160,5 @@ export interface LetterTemplate {
   adminSignatureBox?: SignatureBox; // Where to put the admin's signature (optional)
   
   createdAt: string;
+  active?: boolean;
 }

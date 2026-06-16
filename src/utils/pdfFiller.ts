@@ -1,7 +1,7 @@
 import { PDFDocument } from 'pdf-lib';
 import { PdfField } from '../types';
 
-function createTextCanvasImage(text: string, width: number, height: number, isLongText: boolean): string {
+function createTextCanvasImage(text: string, width: number, height: number, isLongText: boolean, fontSize = 16): string {
   const canvas = document.createElement('canvas');
   const scale = 2; // High resolution for sharpness
   canvas.width = width * scale;
@@ -12,7 +12,7 @@ function createTextCanvasImage(text: string, width: number, height: number, isLo
   ctx.scale(scale, scale);
   
   ctx.fillStyle = '#1e3a8a'; // A dark blue ink color
-  ctx.font = 'bold 16px Arial, sans-serif'; 
+  ctx.font = `bold ${fontSize}px Arial, sans-serif`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
 
@@ -77,7 +77,7 @@ export async function fillPdfFields(
     const actualY = pdfPageHeight - ((field.y + field.height) * scaleY);
 
     if (field.type === 'signature') {
-      const sigData = signatures[field.id];
+    const sigData = signatures[field.id];
       if (sigData) {
         const base64Data = sigData.split(',')[1] || sigData;
         try {
@@ -88,14 +88,33 @@ export async function fillPdfFields(
             width: actualWidth,
             height: actualHeight,
           });
-        } catch (e) {
-          console.error('Failed to embed signature', e);
+        } catch {
+          continue;
+        }
+      }
+    } else if (field.type === 'checkbox') {
+      const checked = fieldValues[field.id] === 'true';
+      if (checked) {
+        const dataUrl = createTextCanvasImage('✓', field.width, field.height, false, field.fontSize || 18);
+        const base64Data = dataUrl.split(',')[1];
+        if (base64Data) {
+          try {
+            const checkImage = await pdfDoc.embedPng(base64Data);
+            page.drawImage(checkImage, {
+              x: actualX,
+              y: actualY,
+              width: actualWidth,
+              height: actualHeight,
+            });
+          } catch {
+            continue;
+          }
         }
       }
     } else {
       const val = fieldValues[field.id];
       if (val) {
-        const dataUrl = createTextCanvasImage(val, field.width, field.height, field.type === 'long-text');
+        const dataUrl = createTextCanvasImage(val, field.width, field.height, field.type === 'long-text', field.fontSize || 16);
         const base64Data = dataUrl.split(',')[1];
         if (base64Data) {
           try {
@@ -106,8 +125,8 @@ export async function fillPdfFields(
               width: actualWidth,
               height: actualHeight,
             });
-          } catch (e) {
-             console.error('Failed to embed text', e);
+          } catch {
+            continue;
           }
         }
       }

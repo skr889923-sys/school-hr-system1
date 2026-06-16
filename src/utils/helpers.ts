@@ -5,5 +5,7 @@ export const generateShortId = () => {
 };
 
 export const generateRequestId = () => {
-  return `HR-${generateShortId()}`;
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const randomPart = uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase();
+  return `HR-${datePart}-${randomPart}`;
 };

@@ -8,12 +8,15 @@ import {
   REQUEST_TYPES,
   AttachmentFile,
   LetterTemplate,
+  UserRole,
 } from '../types';
 import ClientSuccessView from '../components/ClientSuccessView';
 import { renderTemplateContent } from '../utils/templateFields';
 import DOMPurify from 'dompurify';
 import PdfFormFiller from '../components/PdfFormFiller';
 import { PdfField } from '../types';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 import {
   Info,
@@ -21,6 +24,139 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react';
+import { appendRequestAudit } from '../services/auditLogService';
+import { getRoleLabel } from '../services/rbac';
+import { isEmployeeEditableStatus } from '../services/workflow';
+import { createNotification } from '../services/notificationService';
+import { validateUploadFile } from '../utils/fileValidation';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return '';
+}
+
+const UNSUPPORTED_CANVAS_COLOR = /\b(oklch|oklab|lch|lab|color-mix|color|light-dark)\(/i;
+const CANVAS_EXPORT_COLOR_PROPS: Array<{ property: string; fallback: string }> = [
+  { property: 'color', fallback: '#000000' },
+  { property: 'background-color', fallback: '#ffffff' },
+  { property: 'border-top-color', fallback: '#cbd5e1' },
+  { property: 'border-right-color', fallback: '#cbd5e1' },
+  { property: 'border-bottom-color', fallback: '#cbd5e1' },
+  { property: 'border-left-color', fallback: '#cbd5e1' },
+  { property: 'outline-color', fallback: '#000000' },
+  { property: 'text-decoration-color', fallback: '#000000' },
+  { property: 'caret-color', fallback: '#000000' },
+  { property: 'column-rule-color', fallback: '#cbd5e1' },
+  { property: 'fill', fallback: '#000000' },
+  { property: 'stroke', fallback: '#000000' },
+];
+
+function normalizeCanvasCssValue(value: string, fallback: string): string {
+  const normalized = value.trim();
+  if (!normalized) return fallback;
+  if (normalized === 'transparent' || normalized === 'rgba(0, 0, 0, 0)') return normalized;
+  return UNSUPPORTED_CANVAS_COLOR.test(normalized) ? fallback : normalized;
+}
+
+function prepareHtml2CanvasExport(root: HTMLElement, view: Window = window): void {
+  const nodes = [root, ...Array.from(root.querySelectorAll('*'))];
+
+  nodes.forEach((node) => {
+    const element = node as HTMLElement;
+    if (!element.style) return;
+
+    const computed = view.getComputedStyle(element);
+
+    CANVAS_EXPORT_COLOR_PROPS.forEach(({ property, fallback }) => {
+      const value = computed.getPropertyValue(property);
+      element.style.setProperty(property, normalizeCanvasCssValue(value, fallback), 'important');
+    });
+
+    const backgroundImage = computed.getPropertyValue('background-image');
+    if (UNSUPPORTED_CANVAS_COLOR.test(backgroundImage)) {
+      element.style.setProperty('background-image', 'none', 'important');
+    }
+
+    element.style.setProperty('box-shadow', 'none', 'important');
+    element.style.setProperty('text-shadow', 'none', 'important');
+    element.style.setProperty('--tw-ring-color', 'rgba(37, 99, 235, 0.35)');
+    element.style.setProperty('--tw-shadow-color', 'rgba(0, 0, 0, 0)');
+    element.style.setProperty('--tw-shadow', '0 0 rgba(0, 0, 0, 0)');
+    element.style.setProperty('--tw-ring-shadow', '0 0 rgba(0, 0, 0, 0)');
+  });
+
+  root.style.setProperty('background-color', '#ffffff', 'important');
+  root.style.setProperty('color', '#000000', 'important');
+}
+
+async function createPdfFileFromElement(element: HTMLElement, requestId: string): Promise<File> {
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.id = 'final-pdf-export-clone';
+  clone.classList.add('html2canvas-safe-export');
+  clone.style.width = '794px';
+  clone.style.maxWidth = '794px';
+  clone.style.minHeight = '1123px';
+  clone.style.padding = '56px';
+  clone.style.transform = 'none';
+  clone.style.margin = '0';
+  clone.style.boxShadow = 'none';
+  clone.style.border = '1px solid #e2e8f0';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-10000px';
+  wrapper.style.top = '0';
+  wrapper.style.width = '794px';
+  wrapper.style.backgroundColor = '#ffffff';
+  wrapper.style.zIndex = '-1';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  try {
+    prepareHtml2CanvasExport(clone);
+
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      windowWidth: 1200,
+      onclone: (clonedDocument) => {
+        const clonedExport = clonedDocument.getElementById('final-pdf-export-clone') as HTMLElement | null;
+        const clonedWindow = clonedDocument.defaultView;
+        if (clonedExport && clonedWindow) {
+          prepareHtml2CanvasExport(clonedExport, clonedWindow);
+        }
+      },
+    });
+
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+
+    let remainingHeight = imgHeight;
+    let y = 0;
+    pdf.addImage(imgData, 'PNG', 0, y, pageWidth, imgHeight);
+    remainingHeight -= pageHeight;
+
+    while (remainingHeight > 0) {
+      y -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, y, pageWidth, imgHeight);
+      remainingHeight -= pageHeight;
+    }
+
+    return new File([pdf.output('blob')], `final_${requestId}.pdf`, { type: 'application/pdf' });
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+}
 
 export default function ClientForm() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +168,7 @@ export default function ClientForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [template, setTemplate] = useState<LetterTemplate | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('employee');
   
   // Real files chosen by user for uploading
   const [additionalFileBlobs, setAdditionalFileBlobs] = useState<File[]>([]);
@@ -52,6 +189,32 @@ export default function ClientForm() {
     const fetchRequest = async () => {
       if (!id) return;
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+
+        let role: UserRole = 'employee';
+
+        if (user) {
+          const { data: employeeAccount } = await supabase
+            .from('employees')
+            .select('role, email')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+
+          if (employeeAccount?.role) {
+            role = employeeAccount.role as UserRole;
+          } else {
+            const { data: legacyUser } = await supabase
+              .from('users')
+              .select('role')
+              .eq('uid', user.id)
+              .maybeSingle();
+            if (legacyUser?.role) role = legacyUser.role as UserRole;
+          }
+        }
+
+        setCurrentUserRole(role);
+
         const { data } = await supabase
           .from('hr_requests')
           .select('*')
@@ -97,11 +260,14 @@ export default function ClientForm() {
                   const fields = JSON.parse(tData.content);
                   setParsedPdfFields(fields);
                   
-                  // Initialize some default values if possible
                   const defaults: Record<string, string> = {};
                   fields.forEach((f: any) => {
                     if (f.label.includes('اسم') && data.employee_name) defaults[f.id] = data.employee_name;
                     if (f.label.includes('تاريخ')) defaults[f.id] = new Date().toISOString().split('T')[0];
+                    if (f.type === 'employee-name' && data.employee_name) defaults[f.id] = data.employee_name;
+                    if (f.type === 'request-number') defaults[f.id] = data.id;
+                    if (f.type === 'current-date') defaults[f.id] = new Date().toISOString().split('T')[0];
+                    if (f.type === 'manager-name') defaults[f.id] = 'مدير المدرسة';
                   });
                   setPdfFieldValues(defaults);
                 } catch (e) {}
@@ -109,25 +275,9 @@ export default function ClientForm() {
             }
           }
         } else {
-          // If the URL has an ID but not found in DB, show error
-          setRequest({
-            id: id,
-            employeeName: '',
-            employeeId: '',
-            department: '',
-            jobTitle: '',
-            phone: '',
-            email: '',
-            requestType: '',
-            justification: '',
-            attachments: [],
-            agreedToTerms: false,
-            createdAt: new Date().toISOString(),
-            status: 'pending_employee_response'
-          });
+          setError('لم يتم العثور على الطلب.');
         }
       } catch (err) {
-        console.error("Error fetching request:", err);
         setError('حدث خطأ أثناء جلب تفاصيل الطلب.');
       } finally {
         setLoading(false);
@@ -153,6 +303,13 @@ export default function ClientForm() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const fileList = Array.from(e.target.files);
+    const invalidFile = fileList.find(file => !validateUploadFile(file).valid);
+
+    if (invalidFile) {
+      setFormError(validateUploadFile(invalidFile).message || 'تعذر قبول أحد الملفات.');
+      e.target.value = '';
+      return;
+    }
 
     setAdditionalFileBlobs(prev => [...prev, ...fileList]);
     
@@ -175,7 +332,7 @@ export default function ClientForm() {
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     ctx.strokeStyle = '#2563eb'; // Blue color for signature
@@ -206,7 +363,7 @@ export default function ClientForm() {
     if (!isDrawing) return;
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     let clientX = 0;
@@ -237,7 +394,7 @@ export default function ClientForm() {
   const clearSignature = () => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateFormField('signatureData', undefined);
@@ -267,6 +424,26 @@ export default function ClientForm() {
       return;
     }
 
+    const missingPdfField = parsedPdfFields.find(field => {
+      const filledBy = field.filledBy || 'employee';
+      if (!field.required || filledBy !== 'employee') return false;
+      if (field.type === 'signature') return !pdfSignatures[field.id];
+      if (field.type === 'checkbox') return pdfFieldValues[field.id] !== 'true';
+      return !pdfFieldValues[field.id]?.trim();
+    });
+
+    if (missingPdfField) {
+      setFormError(`يرجى تعبئة الحقل الإجباري: ${missingPdfField.label}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const hasPdfSignatureField = parsedPdfFields.some(field => field.type === 'signature');
+    if (!hasPdfSignatureField && !request.signatureData) {
+      setFormError('يرجى إضافة التوقيع الإلكتروني قبل إرسال الطلب.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let finalAttachments = request.attachments;
@@ -286,7 +463,7 @@ export default function ClientForm() {
         finalAttachments = [...(request.attachments?.filter(a => !!a.downloadUrl) || []), ...uploadedAdditions];
       }
 
-      let finalPdfUrl = undefined;
+      let finalPdfUrl: string | undefined = undefined;
       // Generate Template PDF if applicable
       if (request.templateId && template) {
         if (template.type === 'pdf' && template.pdfUrl) {
@@ -298,7 +475,14 @@ export default function ClientForm() {
             if (parsedPdfFields.length > 0) {
               // Smart PDF Field Mapper
               const { fillPdfFields } = await import('../utils/pdfFiller');
-              mergedPdfBytes = await fillPdfFields(originalPdfBytes, parsedPdfFields, pdfFieldValues, pdfSignatures);
+              const mergedFieldValues = { ...pdfFieldValues };
+              parsedPdfFields.forEach(field => {
+                if (field.type === 'employee-name') mergedFieldValues[field.id] = request.employeeName;
+                if (field.type === 'request-number') mergedFieldValues[field.id] = request.id;
+                if (field.type === 'current-date') mergedFieldValues[field.id] = new Date().toISOString().split('T')[0];
+                if (field.type === 'manager-name') mergedFieldValues[field.id] = 'مدير المدرسة';
+              });
+              mergedPdfBytes = await fillPdfFields(originalPdfBytes, parsedPdfFields, mergedFieldValues, pdfSignatures);
             } else if ((template as any).signatureBox && request.signatureData) {
               // Legacy Signature Box
               const { stampSignatureOnPdf } = await import('../utils/pdfService');
@@ -311,7 +495,26 @@ export default function ClientForm() {
             const uploadResult = await uploadFile(pdfFile, id);
             finalPdfUrl = uploadResult.downloadUrl;
           } catch (err) {
-            console.error("Error merging PDF template:", err);
+            const details = getErrorMessage(err);
+            const message = `تعذر توليد أو رفع ملف PDF النهائي.${details ? ` سبب الخطأ: ${details}` : ' يرجى المحاولة مرة أخرى قبل إرسال الطلب.'}`;
+            console.error('Failed to generate or upload final PDF file', err);
+            setFormError(message);
+            throw new Error(message);
+          }
+        } else if (template.type === 'text') {
+          try {
+            const element = document.getElementById('pdf-content-wrapper') as HTMLElement | null;
+            if (!element) throw new Error('FINAL_DOCUMENT_NOT_READY');
+
+            const pdfFile = await createPdfFileFromElement(element, id);
+            const uploadResult = await uploadFile(pdfFile, id);
+            finalPdfUrl = uploadResult.downloadUrl;
+          } catch (err) {
+            const details = getErrorMessage(err);
+            const message = `تعذر توليد أو رفع الخطاب النهائي PDF.${details ? ` سبب الخطأ: ${details}` : ' يرجى المحاولة مرة أخرى قبل إرسال الطلب.'}`;
+            console.error('Failed to generate or upload final text-template PDF', err);
+            setFormError(message);
+            throw new Error(message);
           }
         }
       }
@@ -323,6 +526,22 @@ export default function ClientForm() {
         status: 'submitted_by_employee' as const,
         updatedAt: new Date().toISOString()
       };
+
+      const auditTrail = await appendRequestAudit(request.auditTrail, {
+        action: 'FORM_SUBMITTED',
+        details: 'تم تعبئة الطلب وإرساله للمراجعة مع التوقيع الإلكتروني داخل النظام',
+        performedByRole: currentUserRole,
+        performedByName: getRoleLabel(currentUserRole),
+        entityType: 'hr_request',
+        entityId: id,
+        oldValue: { status: request.status },
+        newValue: {
+          status: updatedRequestData.status,
+          attachmentsCount: finalAttachments.length,
+          hasSignature: Boolean(request.signatureData || Object.keys(pdfSignatures).length > 0),
+          finalPdfGenerated: Boolean(finalPdfUrl),
+        },
+      });
 
       const updatedPayload = {
         employee_name: updatedRequestData.employeeName,
@@ -340,15 +559,17 @@ export default function ClientForm() {
         signature_data: updatedRequestData.signatureData || null,
         final_pdf_url: updatedRequestData.finalPdfUrl || null,
         status: updatedRequestData.status,
-        updated_at: updatedRequestData.updatedAt
+        updated_at: updatedRequestData.updatedAt,
+        audit_trail: auditTrail,
       };
 
       // Check if it exists to know whether to insert or update
       const { data: existing } = await supabase.from('hr_requests').select('id').eq('id', id).single();
       if (existing) {
-        await supabase.from('hr_requests').update(updatedPayload).eq('id', id);
+        const { error: updateError } = await supabase.from('hr_requests').update(updatedPayload).eq('id', id);
+        if (updateError) throw updateError;
       } else {
-        await supabase.from('hr_requests').insert({ id, ...updatedPayload, created_at: updatedRequestData.createdAt });
+        throw new Error('REQUEST_NOT_FOUND');
       }
 
       // Send Email Notification (stubbed or use emailjs)
@@ -356,17 +577,40 @@ export default function ClientForm() {
         const { sendOrderConfirmationEmail } = await import('../emailService');
         await sendOrderConfirmationEmail(updatedRequestData as any);
       } catch (emailErr) {
-        console.error('Error sending confirmation email:', emailErr);
+        // Email is a secondary notification channel; the in-app request state is already saved.
       }
 
-      setRequest(prev => prev ? { ...prev, status: 'submitted_by_employee', attachments: finalAttachments } : prev);
+      const { data: hrManagers } = await supabase
+        .from('employees')
+        .select('auth_user_id, email')
+        .eq('role', 'hr_manager');
+
+      await Promise.all((hrManagers || []).map(manager => createNotification({
+        recipientUserId: manager.auth_user_id || null,
+        recipientEmail: manager.email || null,
+        title: 'طلب مرسل للمراجعة',
+        body: `أرسل ${updatedRequestData.employeeName} الطلب رقم ${id} للمراجعة.`,
+        type: 'request_submitted',
+        entityType: 'hr_request',
+        entityId: id,
+      })));
+
+      setRequest(prev => prev ? {
+        ...prev,
+        status: 'submitted_by_employee',
+        attachments: finalAttachments,
+        finalPdfUrl,
+        auditTrail
+      } : prev);
       
       // Clear blobs
       setAdditionalFileBlobs([]);
       
     } catch (err) {
-      console.error("Error submitting request:", err);
-      setFormError('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
+      console.error('Client form submission failed', err);
+      const details = getErrorMessage(err);
+      setFormError(details || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
@@ -392,8 +636,7 @@ export default function ClientForm() {
     );
   }
 
-  // If the request is already submitted, show the success and ClientSuccessView for the client
-  if (request.status !== 'pending_employee_response') {
+  if (!isEmployeeEditableStatus(request.status)) {
     return (
       <div className="min-h-screen bg-[#FAF9F6]">
         <header className="no-print bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 py-4 px-6 sm:px-12 flex justify-between items-center">
@@ -528,6 +771,15 @@ export default function ClientForm() {
                              }}
                         />
 
+                        {request.justification?.trim() && (
+                          <div className="mt-10 rounded-lg border border-slate-300 p-5" style={{ color: '#000000' }}>
+                            <h3 className="mb-3 text-base font-black">رد / إفادة الموظف:</h3>
+                            <p className="whitespace-pre-wrap text-base font-medium leading-8 text-justify">
+                              {request.justification}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Document Footer (Signatures) */}
                         <div className="mt-12 sm:mt-16 pt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
                           <div className="text-center space-y-4 sm:space-y-8">
@@ -557,6 +809,13 @@ export default function ClientForm() {
                           onFieldChange={(fid, val) => setPdfFieldValues(p => ({ ...p, [fid]: val }))}
                           signatures={pdfSignatures}
                           onSignatureChange={(fid, url) => setPdfSignatures(p => ({ ...p, [fid]: url || '' }))}
+                          currentActor="employee"
+                          systemValues={{
+                            employeeName: request.employeeName,
+                            managerName: 'مدير المدرسة',
+                            currentDate: new Date().toISOString().split('T')[0],
+                            requestNumber: request.id,
+                          }}
                         />
                       ) : (
                         <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4">

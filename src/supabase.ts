@@ -8,7 +8,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const getProjectRef = (url: string) => {
+  try {
+    return new URL(url).hostname.split('.')[0] || 'school-hr';
+  } catch {
+    return 'school-hr';
+  }
+};
+
+const projectRef = getProjectRef(supabaseUrl);
+const authStorageKey = `school-hr-${projectRef}-auth`;
+const legacyAuthStorageKey = `sb-${projectRef}-auth-token`;
+
+if (typeof window !== 'undefined') {
+  try {
+    if (window.localStorage.getItem(legacyAuthStorageKey) && !window.localStorage.getItem(authStorageKey)) {
+      window.localStorage.removeItem(legacyAuthStorageKey);
+    }
+  } catch {
+    // Local storage may be unavailable in private or restricted contexts.
+  }
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storageKey: authStorageKey,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
 
 export const signInAdmin = async (password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

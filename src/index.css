@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Cairo", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Segoe UI", Tahoma, Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 body {
@@ -21,6 +20,28 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.html2canvas-safe-export,
+.html2canvas-safe-export * {
+  color: #000000 !important;
+  border-color: #cbd5e1 !important;
+  outline-color: #000000 !important;
+  text-decoration-color: #000000 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  --tw-ring-color: rgba(37, 99, 235, 0.35) !important;
+  --tw-shadow-color: rgba(0, 0, 0, 0) !important;
+  --tw-shadow: 0 0 rgba(0, 0, 0, 0) !important;
+  --tw-ring-shadow: 0 0 rgba(0, 0, 0, 0) !important;
+}
+
+.html2canvas-safe-export {
+  background-color: #ffffff !important;
+}
+
+.html2canvas-safe-export * {
+  background-color: transparent !important;
 }
 
 /* Print Overrides */
@@ -116,4 +137,3 @@ body {
   line-height: 1.6;
   min-height: calc(297mm - 42px);
 }
-

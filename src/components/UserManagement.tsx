@@ -3,8 +3,9 @@ import { supabase } from '../supabase';
 import { UserRole } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Users, UserPlus, Search, Edit2, Trash2, Mail, Phone, BadgeInfo, X, Save
+  Users, UserPlus, Search, Edit2, Power, Mail, Phone, BadgeInfo, X, Save
 } from 'lucide-react';
+import { getRoleLabel, hasPermission } from '../services/rbac';
 
 interface Employee {
   id: string;
@@ -16,6 +17,9 @@ interface Employee {
   email: string;
   phone: string;
   role: UserRole;
+  active?: boolean;
+  last_login_at?: string | null;
+  updated_at?: string | null;
   created_at: string;
 }
 
@@ -32,6 +36,10 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const canManageEmployees = hasPermission(userRole, 'employees.manage');
+  const supportsActiveColumn = employees.some(emp => Object.prototype.hasOwnProperty.call(emp, 'active'));
+  const supportsUpdatedAtColumn = employees.some(emp => Object.prototype.hasOwnProperty.call(emp, 'updated_at'));
 
   const fetchEmployees = async () => {
     setIsLoading(true);
@@ -44,7 +52,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
       if (error) throw error;
       setEmployees(data || []);
     } catch (err) {
-      console.error('Error fetching employees:', err);
+      setActionMessage({ type: 'error', text: 'تعذر تحميل بيانات الموظفين.' });
     } finally {
       setIsLoading(false);
     }
@@ -65,11 +73,12 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
         email: employee.email,
         phone: employee.phone,
         role: employee.role,
+        active: employee.active ?? true,
       });
     } else {
       setEditingEmployee(null);
       setFormData({
-        full_name: '', national_id: '', department: '', job_title: '', email: '', phone: '', role: 'employee'
+        full_name: '', national_id: '', department: '', job_title: '', email: '', phone: '', role: 'employee', active: true
       });
     }
     setSaveError('');
@@ -82,37 +91,72 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
     setSaveError('');
     
     try {
+      const employeePayload: Partial<Employee> = {
+        full_name: formData.full_name,
+        national_id: formData.national_id,
+        department: formData.department,
+        job_title: formData.job_title,
+        email: formData.email,
+        phone: formData.phone,
+        role: formData.role,
+      };
+
+      if (supportsActiveColumn) {
+        employeePayload.active = formData.active ?? true;
+      }
+
+      if (supportsUpdatedAtColumn) {
+        employeePayload.updated_at = new Date().toISOString();
+      }
+
       if (editingEmployee) {
         const { error } = await supabase
           .from('employees')
-          .update(formData)
+          .update(employeePayload)
           .eq('id', editingEmployee.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('employees')
-          .insert([formData]);
+          .insert([employeePayload]);
         if (error) throw error;
       }
       setIsModalOpen(false);
+      setActionMessage({ type: 'success', text: editingEmployee ? 'تم تحديث بيانات الموظف.' : 'تمت إضافة الموظف.' });
       fetchEmployees();
     } catch (err: any) {
-      console.error('Error saving employee:', err);
-      setSaveError(err.message || 'حدث خطأ أثناء الحفظ');
+      const message = String(err.message || '');
+      setSaveError(
+        message.includes('row-level security')
+          ? 'رفضت قاعدة البيانات العملية بسبب سياسات RLS. نفذ migration: migrations/20260614_employee_rls_hotfix.sql وتأكد أن حسابك مرتبط بدور مدير المدرسة أو مشرف المتابعة.'
+          : message || 'حدث خطأ أثناء الحفظ'
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`هل أنت متأكد من حذف حساب "${name}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+  const handleToggleActive = async (employee: Employee) => {
+    if (!supportsActiveColumn) {
+      setActionMessage({ type: 'error', text: 'تعطيل الحسابات يحتاج تنفيذ Migration الترقية أولاً.' });
+      return;
+    }
+
+    const nextActive = !(employee.active ?? true);
+    if (window.confirm(`هل تريد ${nextActive ? 'تفعيل' : 'تعطيل'} حساب "${employee.full_name}"؟`)) {
       try {
-        const { error } = await supabase.from('employees').delete().eq('id', id);
+        const payload: Partial<Employee> = { active: nextActive };
+        if (supportsUpdatedAtColumn) payload.updated_at = new Date().toISOString();
+
+        const { error } = await supabase
+          .from('employees')
+          .update(payload)
+          .eq('id', employee.id);
         if (error) throw error;
-        setEmployees(employees.filter(emp => emp.id !== id));
+        setEmployees(employees.map(emp => emp.id === employee.id ? { ...emp, active: nextActive } : emp));
+        setActionMessage({ type: 'success', text: nextActive ? 'تم تفعيل الحساب.' : 'تم تعطيل الحساب.' });
       } catch (err) {
-        console.error('Error deleting employee:', err);
-        alert('حدث خطأ أثناء الحذف');
+        setActionMessage({ type: 'error', text: 'تعذر تحديث حالة الحساب.' });
       }
     }
   };
@@ -131,7 +175,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
           <Users className="w-6 h-6 text-blue-600" />
           إدارة الموظفين والمعلمين
         </h2>
-        {userRole === 'hr_manager' && (
+        {canManageEmployees && (
           <button 
             onClick={() => handleOpenModal()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
@@ -143,6 +187,16 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        {actionMessage && (
+          <div className={`mb-4 rounded-xl border px-4 py-3 text-xs font-bold ${
+            actionMessage.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}>
+            {actionMessage.text}
+          </div>
+        )}
+
         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6">
           <Search className="w-5 h-5 text-slate-400" />
           <input 
@@ -204,26 +258,31 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                           ? 'bg-purple-100 text-purple-700' 
                           : 'bg-emerald-100 text-emerald-700'
                       }`}>
-                        {emp.role === 'employee' ? 'معلم / موظف' : 
-                         emp.role === 'hr_manager' ? 'موارد بشرية' : 
-                         emp.role === 'principal' ? 'مدير المدرسة' :
-                         emp.role === 'it_support' ? 'دعم فني' : emp.role}
+                        {getRoleLabel(emp.role)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {emp.auth_user_id ? (
+                      {(emp.active ?? true) ? (
                         <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div> مسجل
+                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div> نشط
                         </span>
                       ) : (
-                        <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-amber-500"></div> بانتظار التسجيل
+                        <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-rose-500"></div> موقوف
                         </span>
+                      )}
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        {emp.auth_user_id ? 'مرتبط بحساب دخول' : 'بانتظار التسجيل'}
+                      </div>
+                      {emp.last_login_at && (
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          آخر دخول: {new Date(emp.last_login_at).toLocaleDateString('ar-SA')}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
-                        {userRole === 'hr_manager' && (
+                        {canManageEmployees && (
                           <>
                             <button 
                               onClick={() => handleOpenModal(emp)}
@@ -233,11 +292,11 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={() => handleDelete(emp.id, emp.full_name)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="حذف"
+                              onClick={() => handleToggleActive(emp)}
+                              className={`p-1.5 rounded-lg transition-colors ${emp.active ?? true ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                              title={(emp.active ?? true) ? 'تعطيل الحساب' : 'تفعيل الحساب'}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Power className="w-4 h-4" />
                             </button>
                           </>
                         )}
@@ -322,6 +381,18 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                       <option value="it_support">دعم فني</option>
                     </select>
                   </div>
+
+                  {supportsActiveColumn && (
+                    <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={formData.active ?? true}
+                        onChange={e => setFormData({ ...formData, active: e.target.checked })}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      الحساب نشط ويمكنه استخدام النظام
+                    </label>
+                  )}
                 </form>
                 
                 <div className="mt-6 bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex items-start gap-3">

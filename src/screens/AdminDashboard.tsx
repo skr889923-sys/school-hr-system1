@@ -13,6 +13,10 @@ import UserManagement from '../components/UserManagement';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { getFieldsForTemplate, TemplateField } from '../utils/templateFields';
+import { appendRequestAudit } from '../services/auditLogService';
+import { getRoleInitials, getRoleLabel, hasPermission } from '../services/rbac';
+import { canTransitionRequest, getStatusMeta } from '../services/workflow';
+import { createNotification, createRequestNotificationByEmail } from '../services/notificationService';
 
 const quillModules = {
   toolbar: [
@@ -38,12 +42,16 @@ const quillFormats = [
 
 interface Employee {
   id: string;
+  auth_user_id?: string | null;
   full_name: string;
   national_id: string;
   department: string;
   job_title: string;
   email: string;
   phone: string;
+  role?: UserRole;
+  active?: boolean;
+  last_login_at?: string | null;
 }
 
 interface AdminDashboardProps {
@@ -67,6 +75,10 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   const [templateFieldData, setTemplateFieldData] = useState<Record<string, string>>({});
   const [currentTemplateFields, setCurrentTemplateFields] = useState<TemplateField[]>([]);
   const [customTemplateContent, setCustomTemplateContent] = useState<string>('');
+  const [createReqError, setCreateReqError] = useState('');
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const actorName = getRoleLabel(userRole);
 
   useEffect(() => {
     document.title = "لوحة التحكم | نظام الموارد البشرية";
@@ -77,7 +89,8 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       const { data } = await supabase
         .from('hr_requests')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(250);
       
       if (data) {
         setRequests(data.map(d => ({
@@ -122,7 +135,8 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       const { data } = await supabase
         .from('employees')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500);
       if (data) setEmployees(data);
     };
 
@@ -151,6 +165,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
     setTemplateFieldData({});
     setCurrentTemplateFields([]);
     setCustomTemplateContent('');
+    setCreateReqError('');
     setCreateReqModalOpen(true);
   };
 
@@ -174,11 +189,39 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   };
 
   const handleCreateNewRequest = async () => {
-    if (!newReqData.email || !newReqData.employeeName) {
-      alert('يرجى إدخال اسم الموظف وبريده الإلكتروني على الأقل.');
+    if (!hasPermission(userRole, 'requests.create')) {
+      setCreateReqError('ليست لديك صلاحية إنشاء طلبات جديدة.');
       return;
     }
-    const docId = generateRequestId(); // e.g. HR-XXXX
+
+    if (!newReqData.email || !newReqData.employeeName) {
+      setCreateReqError('يرجى إدخال اسم الموظف وبريده الإلكتروني على الأقل.');
+      return;
+    }
+
+    const missingTemplateField = currentTemplateFields.find(field => field.required && !templateFieldData[field.key]?.trim());
+    if (missingTemplateField) {
+      setCreateReqError(`يرجى تعبئة حقل "${missingTemplateField.label}" قبل إنشاء الطلب.`);
+      return;
+    }
+
+    setCreateReqError('');
+    const docId = generateRequestId();
+    const auditTrail = await appendRequestAudit([], {
+      action: 'REQUEST_CREATED',
+      details: 'تم إصدار طلب وتوجيهه للموظف' + (selectedTemplateId ? ' باستخدام قالب' : ''),
+      performedByRole: userRole,
+      performedByName: actorName,
+      entityType: 'hr_request',
+      entityId: docId,
+      newValue: {
+        employeeName: newReqData.employeeName,
+        email: newReqData.email,
+        templateId: selectedTemplateId || null,
+        status: 'pending_employee_response',
+      },
+    });
+
     const newReq: EmployeeRequest = {
       id: docId,
       status: 'pending_employee_response',
@@ -195,18 +238,11 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       templateId: selectedTemplateId || undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      auditTrail: [{
-        id: Math.random().toString(36).substr(2, 9),
-        action: 'CREATED',
-        details: 'تم إصدار مساءلة/خطاب وتوجيهه للموظف' + (selectedTemplateId ? ` (مع قالب)` : ''),
-        performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
-        timestamp: new Date().toISOString()
-      }]
+      auditTrail
     };
 
     try {
-      await supabase.from('hr_requests').insert({
+      const { error } = await supabase.from('hr_requests').insert({
         id: docId,
         status: newReq.status,
         employee_name: newReq.employeeName,
@@ -228,12 +264,23 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         updated_at: newReq.updatedAt,
         audit_trail: newReq.auditTrail
       });
+      if (error) throw error;
+
+      await createRequestNotificationByEmail({
+        recipientEmail: newReq.email,
+        title: 'طلب جديد موجه إليك',
+        body: `تم توجيه ${newReq.requestType || 'طلب'} لك برقم ${docId}.`,
+        type: 'request_assigned',
+        entityType: 'hr_request',
+        entityId: docId,
+      });
+
       setCreateReqModalOpen(false);
       const link = `${window.location.origin}/request/${docId}`;
       setNewLinkModal({ isOpen: true, link });
+      setActionMessage({ type: 'success', text: 'تم إنشاء الطلب وتوجيهه للموظف.' });
     } catch (error) {
-      console.error("Error creating request:", error);
-      alert('حدث خطأ أثناء إنشاء الطلب.');
+      setCreateReqError('حدث خطأ أثناء إنشاء الطلب. تحقق من الاتصال والصلاحيات ثم حاول مرة أخرى.');
     }
   };
 
@@ -246,11 +293,41 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   };
 
   const handleDeleteRequest = async (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الطلب بشكل نهائي؟')) {
+    if (!hasPermission(userRole, 'requests.archive')) {
+      setActionMessage({ type: 'error', text: 'ليست لديك صلاحية أرشفة الطلبات.' });
+      return;
+    }
+
+    const req = requests.find(item => item.id === id);
+    if (!req) return;
+
+    if (window.confirm('سيتم أرشفة الطلب مع إبقاء سجل التدقيق والمرفقات. هل تريد المتابعة؟')) {
       try {
-        await supabase.from('hr_requests').delete().eq('id', id);
-      } catch (error) {
-        console.error("Error deleting request:", error);
+        const auditTrail = await appendRequestAudit(req.auditTrail, {
+          action: 'REQUEST_ARCHIVED',
+          details: 'تمت أرشفة الطلب بدلاً من حذفه نهائياً',
+          performedByRole: userRole,
+          performedByName: actorName,
+          entityType: 'hr_request',
+          entityId: id,
+          oldValue: { status: req.status },
+          newValue: { status: 'archived' },
+        });
+
+        const { error } = await supabase
+          .from('hr_requests')
+          .update({
+            status: 'archived',
+            audit_trail: auditTrail,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+        setRequests(prev => prev.map(item => item.id === id ? { ...item, status: 'archived', auditTrail } : item));
+        setActionMessage({ type: 'success', text: 'تمت أرشفة الطلب بنجاح.' });
+      } catch {
+        setActionMessage({ type: 'error', text: 'تعذرت أرشفة الطلب. تحقق من الصلاحيات ثم حاول مرة أخرى.' });
       }
     }
   };
@@ -263,51 +340,92 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   const handleStatusChange = async (reqId: string, newStatus: EmployeeRequest['status'], rejectionReason?: string) => {
     try {
       const req = requests.find(r => r.id === reqId);
+      if (!req) return;
+
+      if (!canTransitionRequest(userRole, req.status, newStatus)) {
+        setActionMessage({ type: 'error', text: 'هذا الانتقال غير مسموح لصلاحيتك الحالية أو لحالة الطلب.' });
+        return;
+      }
+
+      if ((newStatus === 'rejected' || newStatus === 'returned') && !rejectionReason?.trim()) {
+        setActionMessage({ type: 'error', text: 'يرجى إدخال سبب واضح قبل الرفض أو الإعادة للتعديل.' });
+        return;
+      }
       
-      const statusLabels: Record<string, string> = {
-        'pending_employee_response': 'بانتظار رد الموظف ⏳',
-        'submitted_by_employee': 'تم الرد (قيد مراجعة الموارد) 🔧',
-        'forwarded_to_principal': 'مرفوع لمدير المدرسة ↗️',
-        'approved': 'معتمد ✅',
-        'completed': 'مكتمل 📁',
-        'rejected': 'مرفوض ❌'
-      };
-
-      const auditEntry = {
-        id: Math.random().toString(36).substr(2, 9),
+      const statusLabel = getStatusMeta(newStatus).label;
+      const newAuditTrail = await appendRequestAudit(req.auditTrail, {
         action: 'STATUS_CHANGE',
-        details: `تم تغيير الحالة إلى: ${statusLabels[newStatus] || newStatus}${rejectionReason ? ` - السبب: ${rejectionReason}` : ''}`,
+        details: `تم تغيير الحالة إلى: ${statusLabel}${rejectionReason ? ` - السبب: ${rejectionReason}` : ''}`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
-        timestamp: new Date().toISOString()
-      };
-
-      const newAuditTrail = [...(req?.auditTrail || []), auditEntry];
+        performedByName: actorName,
+        entityType: 'hr_request',
+        entityId: reqId,
+        oldValue: { status: req.status },
+        newValue: { status: newStatus, reason: rejectionReason || null },
+      });
       
       const updatePayload: any = { 
         status: newStatus, 
         audit_trail: newAuditTrail,
         updated_at: new Date().toISOString()
       };
-      
-      // If rejected, the reason is already tracked in the audit_trail
-      // We can also optionally append it to adminNotes if we want, but audit_trail is sufficient.
 
-      await supabase.from('hr_requests').update(updatePayload).eq('id', reqId);
+      if (newStatus === 'rejected' || newStatus === 'returned') {
+        updatePayload.rejection_reason = rejectionReason || null;
+        updatePayload.rejected_by_role = userRole;
+      }
       
-      // Send email if needed
+      const { error } = await supabase.from('hr_requests').update(updatePayload).eq('id', reqId);
+
+      if (error && (updatePayload.rejection_reason || updatePayload.rejected_by_role)) {
+        delete updatePayload.rejection_reason;
+        delete updatePayload.rejected_by_role;
+        const retry = await supabase.from('hr_requests').update(updatePayload).eq('id', reqId);
+        if (retry.error) throw retry.error;
+      } else if (error) {
+        throw error;
+      }
+
+      if (['approved', 'rejected', 'returned'].includes(newStatus)) {
+        await createRequestNotificationByEmail({
+          recipientEmail: req.email,
+          title: `تم تحديث حالة الطلب ${req.id}`,
+          body: `${getStatusMeta(newStatus).label}${rejectionReason ? `: ${rejectionReason}` : ''}`,
+          type: 'request_status',
+          entityType: 'hr_request',
+          entityId: req.id,
+        });
+      }
+
+      if (newStatus === 'forwarded_to_principal') {
+        const { data: principals } = await supabase
+          .from('employees')
+          .select('auth_user_id, email')
+          .eq('role', 'principal');
+
+        await Promise.all((principals || []).map(principal => createNotification({
+          recipientUserId: principal.auth_user_id || null,
+          recipientEmail: principal.email || null,
+          title: 'طلب بانتظار اعتمادك',
+          body: `تم رفع الطلب ${req.id} لاعتماده من مدير المدرسة.`,
+          type: 'request_status',
+          entityType: 'hr_request',
+          entityId: req.id,
+        })));
+      }
+      
       setRequests(prev => {
         const req = prev.find(r => r.id === reqId);
         if (req) {
           import('../emailService').then(({ sendOrderStatusUpdateEmail }) => {
-            sendOrderStatusUpdateEmail(req as any, statusLabels[newStatus] || newStatus);
-          }).catch(err => console.error('Error sending update email:', err));
+            sendOrderStatusUpdateEmail(req as any, statusLabel);
+          }).catch(() => undefined);
         }
-        return prev.map(r => r.id === reqId ? { ...r, status: newStatus, auditTrail: newAuditTrail } : r);
+        return prev.map(r => r.id === reqId ? { ...r, status: newStatus, auditTrail: newAuditTrail, rejectionReason } : r);
       });
+      setActionMessage({ type: 'success', text: `تم تحديث الحالة إلى ${statusLabel}.` });
     } catch (err) {
-      console.error('Error updating status:', err);
-      alert('حدث خطأ أثناء تحديث حالة الطلب.');
+      setActionMessage({ type: 'error', text: 'حدث خطأ أثناء تحديث حالة الطلب.' });
     }
   };
 
@@ -334,15 +452,15 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       const currentFiles = req.adminAttachments || [];
       const newFiles = [...currentFiles, uploadedFile];
       
-      const auditEntry = {
-        id: Math.random().toString(36).substr(2, 9),
+      const newAuditTrail = await appendRequestAudit(req.auditTrail, {
         action: 'FILE_UPLOAD',
         details: `تم إرفاق ملف إداري: ${file.name}`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
-        timestamp: new Date().toISOString()
-      };
-      const newAuditTrail = [...(req.auditTrail || []), auditEntry];
+        performedByName: actorName,
+        entityType: 'hr_request',
+        entityId: req.id,
+        newValue: { fileName: file.name, storagePath: uploadResult.storagePath },
+      });
       
       await supabase.from('hr_requests').update({ 
         admin_attachments: newFiles, 
@@ -355,9 +473,9 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         uploading: false,
         request: { ...req, adminAttachments: newFiles, auditTrail: newAuditTrail }
       }));
-    } catch (err) {
-      console.error('Error uploading file:', err);
-      alert('فشل رفع الملف.');
+      setActionMessage({ type: 'success', text: 'تم رفع الملف الإداري.' });
+    } catch (err: any) {
+      setActionMessage({ type: 'error', text: err?.message || 'فشل رفع الملف.' });
       setAdminFilesModal(prev => ({ ...prev, uploading: false }));
     }
   };
@@ -371,15 +489,15 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       const currentFiles = req.adminAttachments || [];
       const newFiles = currentFiles.filter(f => f.downloadUrl !== fileUrl);
       
-      const auditEntry = {
-        id: Math.random().toString(36).substr(2, 9),
+      const newAuditTrail = await appendRequestAudit(req.auditTrail, {
         action: 'FILE_DELETE',
         details: `تم حذف ملف إداري`,
         performedByRole: userRole,
-        performedByName: userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'principal' ? 'مدير المدرسة' : 'الدعم الفني',
-        timestamp: new Date().toISOString()
-      };
-      const newAuditTrail = [...(req.auditTrail || []), auditEntry];
+        performedByName: actorName,
+        entityType: 'hr_request',
+        entityId: req.id,
+        oldValue: { fileUrl },
+      });
 
       await supabase.from('hr_requests').update({ 
         admin_attachments: newFiles, 
@@ -391,10 +509,41 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         ...prev,
         request: { ...req, adminAttachments: newFiles, auditTrail: newAuditTrail }
       }));
-    } catch (err) {
-      console.error('Error deleting file:', err);
+      setActionMessage({ type: 'success', text: 'تم حذف الملف من بيانات الطلب.' });
+    } catch {
+      setActionMessage({ type: 'error', text: 'تعذر حذف الملف الإداري.' });
     }
   };
+
+  const recentCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const dashboardStats = {
+    employees: employees.length,
+    newRequests: requests.filter(r => new Date(r.createdAt).getTime() >= recentCutoff).length,
+    waitingEmployee: requests.filter(r => r.status === 'pending_employee_response' || r.status === 'assigned').length,
+    pendingReview: requests.filter(r => r.status === 'submitted_by_employee' || r.status === 'forwarded_to_principal').length,
+    approved: requests.filter(r => r.status === 'approved' || r.status === 'completed').length,
+    rejected: requests.filter(r => r.status === 'rejected').length,
+    archived: requests.filter(r => r.status === 'archived').length,
+  };
+
+  const urgentRequests = requests
+    .filter(req => ['submitted_by_employee', 'forwarded_to_principal', 'returned'].includes(req.status))
+    .slice(0, 5);
+
+  const recentActivities = requests
+    .flatMap(req => (req.auditTrail || []).map(entry => ({ ...entry, requestId: req.id })))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 6);
+
+  const topTemplates = Object.entries(
+    requests.reduce<Record<string, number>>((acc, req) => {
+      const key = req.requestType || 'بدون قالب';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   if (loading) {
     return (
@@ -449,7 +598,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
             الطلبات والخطابات
           </button>
 
-          {(userRole === 'hr_manager' || userRole === 'it_support') && (
+          {hasPermission(userRole, 'templates.manage') && (
             <button
               onClick={() => { setActiveTab('templates'); setIsMobileSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'templates' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
@@ -459,13 +608,15 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
             </button>
           )}
 
-          <button
-            onClick={() => { setActiveTab('employees'); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'employees' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
-          >
-            <Users size={20} className={activeTab === 'employees' ? 'text-blue-600' : 'text-slate-400'} />
-            إدارة الموظفين
-          </button>
+          {hasPermission(userRole, 'employees.read') && (
+            <button
+              onClick={() => { setActiveTab('employees'); setIsMobileSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'employees' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+            >
+              <Users size={20} className={activeTab === 'employees' ? 'text-blue-600' : 'text-slate-400'} />
+              إدارة الموظفين
+            </button>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-100">
@@ -503,10 +654,10 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-slate-600 hidden sm:block">
-              {userRole === 'hr_manager' ? 'مشرف المتابعة' : userRole === 'it_support' ? 'الدعم الفني' : 'مسؤول'}
+              {getRoleLabel(userRole)}
             </span>
             <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-black">
-              {userRole === 'hr_manager' ? 'HR' : 'IT'}
+              {getRoleInitials(userRole)}
             </div>
           </div>
         </header>
@@ -514,40 +665,107 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
         <ProfileSettings isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-8">
+          {actionMessage && (
+            <div className={`max-w-6xl mx-auto mb-4 rounded-xl border px-4 py-3 text-sm font-bold ${
+              actionMessage.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-rose-50 text-rose-800 border-rose-200'
+            }`}>
+              {actionMessage.text}
+            </div>
+          )}
+
           {activeTab === 'dashboard' && (
             <div className="max-w-6xl mx-auto space-y-8">
               <div>
-                <h1 className="text-2xl font-black text-slate-900">مرحباً بك في لوحة المعلومات 👋</h1>
-                <p className="text-sm text-slate-500 mt-1">نظرة عامة على نشاط النظام وحالة الطلبات.</p>
+                <h1 className="text-2xl font-black text-slate-900">لوحة معلومات الموارد البشرية</h1>
+                <p className="text-sm text-slate-500 mt-1">مؤشرات تشغيلية مختصرة لحالة الموظفين والطلبات ومسار الاعتماد.</p>
               </div>
               
-              {/* Analytics Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-slate-800">{requests.length}</span>
-                  <span className="text-xs text-slate-500 font-bold mt-2">إجمالي الطلبات</span>
-                </div>
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-slate-600">{requests.filter(r => r.status === 'pending_employee_response').length}</span>
-                  <span className="text-xs text-slate-500 font-bold mt-2">بانتظار الموظف</span>
-                </div>
-                <div className="bg-amber-50 p-6 rounded-2xl border border-amber-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-amber-600">{requests.filter(r => r.status === 'submitted_by_employee' || r.status === 'forwarded_to_principal').length}</span>
-                  <span className="text-xs text-amber-700 font-bold mt-2">قيد المراجعة</span>
-                </div>
-                <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-emerald-600">{requests.filter(r => r.status === 'approved').length}</span>
-                  <span className="text-xs text-emerald-700 font-bold mt-2">مقبول</span>
-                </div>
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-blue-600">{requests.filter(r => r.status === 'completed').length}</span>
-                  <span className="text-xs text-blue-700 font-bold mt-2">مكتمل</span>
-                </div>
-                <div className="bg-rose-50 p-6 rounded-2xl border border-rose-200 shadow-sm flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-rose-600">{requests.filter(r => r.status === 'rejected').length}</span>
-                  <span className="text-xs text-rose-700 font-bold mt-2">مرفوض</span>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: 'الموظفون', value: dashboardStats.employees, tone: 'text-slate-900 bg-white border-slate-200', hint: 'حسابات مسجلة أو بانتظار التسجيل' },
+                  { label: 'طلبات جديدة', value: dashboardStats.newRequests, tone: 'text-blue-800 bg-blue-50 border-blue-200', hint: 'خلال آخر 7 أيام' },
+                  { label: 'بانتظار الموظف', value: dashboardStats.waitingEmployee, tone: 'text-amber-800 bg-amber-50 border-amber-200', hint: 'تحتاج تعبئة أو توقيع' },
+                  { label: 'قيد الاعتماد', value: dashboardStats.pendingReview, tone: 'text-indigo-800 bg-indigo-50 border-indigo-200', hint: 'عند المشرف أو المدير' },
+                  { label: 'معتمدة / مكتملة', value: dashboardStats.approved, tone: 'text-emerald-800 bg-emerald-50 border-emerald-200', hint: 'جاهزة للأرشفة والطباعة' },
+                  { label: 'مرفوضة', value: dashboardStats.rejected, tone: 'text-rose-800 bg-rose-50 border-rose-200', hint: 'تحتاج سبباً موثقاً' },
+                  { label: 'مؤرشفة', value: dashboardStats.archived, tone: 'text-slate-700 bg-slate-50 border-slate-200', hint: 'غير قابلة للتعديل المعتاد' },
+                  { label: 'إجمالي الطلبات', value: requests.length, tone: 'text-slate-900 bg-white border-slate-200', hint: 'آخر 250 طلباً محملاً' },
+                ].map(card => (
+                  <div key={card.label} className={`rounded-xl border p-5 shadow-sm ${card.tone}`}>
+                    <span className="block text-3xl font-black tabular-nums">{card.value}</span>
+                    <span className="block text-sm font-black mt-2">{card.label}</span>
+                    <span className="block text-[11px] font-semibold opacity-70 mt-1">{card.hint}</span>
+                  </div>
+                ))}
               </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section className="xl:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-base font-black text-slate-900">آخر الأنشطة</h2>
+                    <span className="text-[11px] font-bold text-slate-400">سجل تدقيق الطلبات</span>
+                  </div>
+                  {recentActivities.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                      لا توجد أنشطة مسجلة بعد.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {recentActivities.map(activity => (
+                        <div key={`${activity.requestId}-${activity.id}`} className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{activity.details}</p>
+                            <p className="text-[11px] text-slate-500 mt-1">
+                              {activity.performedByName} · الطلب {activity.requestId}
+                            </p>
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-400 shrink-0" dir="ltr">
+                            {new Date(activity.timestamp).toLocaleString('ar-SA')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                  <h2 className="text-base font-black text-slate-900 mb-4">الطلبات العاجلة</h2>
+                  {urgentRequests.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                      لا توجد طلبات عاجلة حالياً.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {urgentRequests.map(req => (
+                        <button key={req.id} onClick={() => handleSelectRequest(req)} className="w-full text-right rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
+                          <span className="block text-sm font-black text-slate-900">{req.employeeName || 'موظف غير محدد'}</span>
+                          <span className="block text-[11px] text-slate-500 mt-1">{req.id} · {getStatusMeta(req.status).shortLabel}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h2 className="text-base font-black text-slate-900 mb-4">أكثر النماذج استخداماً</h2>
+                {topTemplates.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                    لا توجد بيانات استخدام كافية.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                    {topTemplates.map(([name, count]) => (
+                      <div key={name} className="rounded-xl bg-slate-50 border border-slate-200 p-4">
+                        <span className="block text-sm font-black text-slate-800 line-clamp-2">{name}</span>
+                        <span className="block mt-3 text-2xl font-black text-slate-900 tabular-nums">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
           )}
 
@@ -559,7 +777,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                   <p className="text-sm text-slate-500 mt-1">تتبع الحالات، المراجعة، إصدار النماذج، ومتابعة الردود.</p>
                 </div>
                 
-                {(userRole === 'hr_manager' || userRole === 'it_support') && (
+                {hasPermission(userRole, 'requests.create') && (
                   <button
                     onClick={openCreateModal}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-sm transition-all"
@@ -574,15 +792,15 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 requests={requests}
                 userRole={userRole}
                 onSelectRequest={handleSelectRequest}
-                onDeleteRequest={(userRole === 'hr_manager' || userRole === 'it_support') ? handleDeleteRequest : undefined}
-                onAddNew={(userRole === 'hr_manager' || userRole === 'it_support') ? openCreateModal : undefined}
-                onStatusChange={(userRole === 'hr_manager' || userRole === 'it_support' || userRole === 'principal') ? handleStatusChange : undefined}
-                onUploadAdminFiles={(userRole === 'hr_manager' || userRole === 'it_support') ? handleOpenAdminFiles : undefined}
+                onDeleteRequest={hasPermission(userRole, 'requests.archive') ? handleDeleteRequest : undefined}
+                onAddNew={hasPermission(userRole, 'requests.create') ? openCreateModal : undefined}
+                onStatusChange={hasPermission(userRole, 'requests.forward') || hasPermission(userRole, 'requests.approve') || hasPermission(userRole, 'requests.reject') || hasPermission(userRole, 'requests.return') ? handleStatusChange : undefined}
+                onUploadAdminFiles={hasPermission(userRole, 'requests.attachAdminFiles') ? handleOpenAdminFiles : undefined}
               />
             </div>
           )}
 
-          {activeTab === 'templates' && (userRole === 'hr_manager' || userRole === 'it_support') && (
+          {activeTab === 'templates' && hasPermission(userRole, 'templates.manage') && (
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-2xl font-black text-slate-900">إدارة قوالب الخطابات والنماذج</h1>
@@ -592,7 +810,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
             </div>
           )}
 
-          {activeTab === 'employees' && (
+          {activeTab === 'employees' && hasPermission(userRole, 'employees.read') && (
             <div className="max-w-6xl mx-auto space-y-6">
               <UserManagement userRole={userRole} />
             </div>
@@ -619,6 +837,11 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
               </div>
               <div className="p-5 space-y-4 overflow-y-auto">
                 <p className="text-sm text-slate-600 font-bold">يرجى تحديد القالب وإدخال بيانات الموظف لتوجيه المساءلة.</p>
+                {createReqError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">
+                    {createReqError}
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">اختر موظف من القائمة (لتعبئة البيانات تلقائياً)</label>
@@ -682,7 +905,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                     className="w-full text-sm border border-slate-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="">-- بدون قالب (خطاب فارغ) --</option>
-                    {templates.map(t => (
+                    {templates.filter(t => t.active !== false).map(t => (
                       <option key={t.id} value={t.id}>{t.name} ({t.type === 'pdf' ? 'PDF' : 'نص'})</option>
                     ))}
                   </select>

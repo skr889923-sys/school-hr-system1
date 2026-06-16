@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { assertValidUploadFile } from './fileValidation';
 
 /**
  * Uploads a file to Supabase Storage under a specific folder (e.g. request ID).
@@ -10,8 +11,10 @@ export const uploadFile = async (
   requestId: string,
   onProgress?: (progress: number) => void
 ): Promise<{ downloadUrl: string; storagePath: string }> => {
+  assertValidUploadFile(file);
+
   // Generate a unique file name to avoid collisions
-  const fileExtension = file.name.split('.').pop();
+  const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'bin';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
   const storagePath = `requests/${requestId}/${uniqueFileName}`;
   
@@ -24,12 +27,17 @@ export const uploadFile = async (
     .from('files')
     .upload(storagePath, file, {
       cacheControl: '3600',
-      upsert: false
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
     });
 
   if (error) {
-    console.error("Upload failed", error);
-    throw error;
+    const statusCode = (error as { statusCode?: string; status?: number }).statusCode
+      || (error as { statusCode?: string; status?: number }).status;
+    const details = [statusCode ? `رمز ${statusCode}` : null, error.message]
+      .filter(Boolean)
+      .join(' - ');
+    throw new Error(`فشل رفع الملف إلى التخزين${details ? `: ${details}` : ''}. المسار: ${storagePath}`);
   }
 
   if (onProgress) {
@@ -50,10 +58,6 @@ export const uploadFile = async (
  * Deletes a file from Supabase Storage given its path.
  */
 export const deleteFile = async (storagePath: string): Promise<void> => {
-  try {
-    const { error } = await supabase.storage.from('files').remove([storagePath]);
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error deleting file", error);
-  }
+  const { error } = await supabase.storage.from('files').remove([storagePath]);
+  if (error) throw error;
 };

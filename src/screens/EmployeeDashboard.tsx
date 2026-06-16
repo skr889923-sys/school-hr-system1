@@ -4,6 +4,7 @@ import { EmployeeRequest } from '../types';
 import { LogOut, FileText, Loader2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { getStatusMeta } from '../services/workflow';
 
 export default function EmployeeDashboard() {
   const [requests, setRequests] = useState<EmployeeRequest[]>([]);
@@ -71,12 +72,17 @@ export default function EmployeeDashboard() {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
+      case 'assigned':
       case 'pending_employee_response': return { text: 'بانتظار ردك', color: 'bg-amber-100 text-amber-800', icon: <AlertCircle size={14} /> };
+      case 'in_progress': return { text: 'قيد التعبئة', color: 'bg-blue-100 text-blue-800', icon: <Clock size={14} /> };
       case 'submitted_by_employee': return { text: 'قيد مراجعة مشرف المتابعة', color: 'bg-blue-100 text-blue-800', icon: <Clock size={14} /> };
       case 'forwarded_to_principal': return { text: 'قيد مراجعة الإدارة', color: 'bg-indigo-100 text-indigo-800', icon: <Clock size={14} /> };
+      case 'returned': return { text: 'معاد للتعديل', color: 'bg-amber-100 text-amber-800', icon: <AlertCircle size={14} /> };
       case 'approved': return { text: 'معتمد', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle2 size={14} /> };
+      case 'completed': return { text: 'مكتمل', color: 'bg-emerald-100 text-emerald-800', icon: <CheckCircle2 size={14} /> };
+      case 'archived': return { text: 'مؤرشف', color: 'bg-slate-100 text-slate-700', icon: <CheckCircle2 size={14} /> };
       case 'rejected': return { text: 'مرفوض', color: 'bg-rose-100 text-rose-800', icon: <AlertCircle size={14} /> };
-      default: return { text: status, color: 'bg-slate-100 text-slate-800', icon: <Clock size={14} /> };
+      default: return { text: getStatusMeta(status).shortLabel, color: 'bg-slate-100 text-slate-800', icon: <Clock size={14} /> };
     }
   };
 

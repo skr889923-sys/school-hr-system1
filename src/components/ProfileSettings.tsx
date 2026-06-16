@@ -14,16 +14,38 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingSig, setExistingSig] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [canSaveEmployeeSignature, setCanSaveEmployeeSignature] = useState(false);
+  const [canSaveLegacySignature, setCanSaveLegacySignature] = useState(false);
 
   useEffect(() => {
     const fetchSig = async () => {
       if (isOpen) {
         setLoading(true);
+        setMessage(null);
+        setCanSaveEmployeeSignature(false);
+        setCanSaveLegacySignature(false);
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData.session?.user) {
-          const { data } = await supabase.from('users').select('signature_data').eq('uid', sessionData.session.user.id).maybeSingle();
-          if (data) {
-            setExistingSig(data.signature_data);
+          const { data: employee } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('auth_user_id', sessionData.session.user.id)
+            .maybeSingle();
+
+          const supportsEmployeeSignature = Boolean(employee && Object.prototype.hasOwnProperty.call(employee, 'signature_data'));
+          setCanSaveEmployeeSignature(supportsEmployeeSignature);
+
+          if (supportsEmployeeSignature && employee?.signature_data) {
+            setExistingSig(employee.signature_data);
+          } else {
+            const { data } = await supabase.from('users').select('*').eq('uid', sessionData.session.user.id).maybeSingle();
+            const supportsLegacySignature = Boolean(data && Object.prototype.hasOwnProperty.call(data, 'signature_data'));
+            setCanSaveLegacySignature(supportsLegacySignature);
+
+            if (supportsLegacySignature && data?.signature_data) {
+              setExistingSig(data.signature_data);
+            }
           }
         }
         setLoading(false);
@@ -48,18 +70,28 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
     }
 
     if (!base64Sig) {
-      alert("الرجاء التوقيع أولاً");
+      setMessage({ type: 'error', text: 'الرجاء التوقيع أولاً.' });
       return;
     }
 
     setSaving(true);
     try {
-      await supabase.from('users').update({ signature_data: base64Sig }).eq('uid', user.id);
-      alert('تم حفظ التوقيع بنجاح!');
+      if (canSaveEmployeeSignature) {
+        await supabase
+          .from('employees')
+          .update({ signature_data: base64Sig })
+          .eq('auth_user_id', user.id);
+      } else if (canSaveLegacySignature) {
+        await supabase.from('users').update({ signature_data: base64Sig }).eq('uid', user.id);
+      } else {
+        setMessage({ type: 'error', text: 'حفظ التوقيع يحتاج تنفيذ Migration الترقية أولاً.' });
+        return;
+      }
+
+      setMessage({ type: 'success', text: 'تم حفظ التوقيع الإلكتروني داخل النظام.' });
       onClose();
     } catch (err) {
-      console.error(err);
-      alert('حدث خطأ أثناء الحفظ');
+      setMessage({ type: 'error', text: 'حدث خطأ أثناء حفظ التوقيع.' });
     } finally {
       setSaving(false);
     }
@@ -86,6 +118,15 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
           
           <div className="p-6 space-y-4">
             <p className="text-xs text-slate-500 font-bold mb-2">توقيعك الإلكتروني (سيتم استخدامه لختم الطلبات والخطابات)</p>
+            {message && (
+              <div className={`rounded-xl border px-4 py-3 text-xs font-bold ${
+                message.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-rose-50 text-rose-800 border-rose-200'
+              }`}>
+                {message.text}
+              </div>
+            )}
             
             <div className="border-2 border-dashed border-slate-300 rounded-2xl bg-white overflow-hidden relative" style={{ height: 200 }}>
               {loading ? (

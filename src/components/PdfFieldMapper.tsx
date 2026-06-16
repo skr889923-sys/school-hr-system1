@@ -7,7 +7,7 @@ import { PdfField, PdfFieldType } from '../types';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker-5.4.296.min.mjs';
 
 interface Props {
   pdfUrl: string;
@@ -21,26 +21,42 @@ export default function PdfFieldMapper({ pdfUrl, fields, onChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const PDF_WIDTH = 800;
 
+  const fieldTypeOptions: Array<{ type: PdfFieldType; label: string; defaultLabel: string; width: number; height: number; filledBy?: PdfField['filledBy'] }> = [
+    { type: 'text', label: 'نص قصير', defaultLabel: 'نص قصير', width: 150, height: 40 },
+    { type: 'long-text', label: 'نص طويل', defaultLabel: 'نص طويل', width: 240, height: 90 },
+    { type: 'date', label: 'تاريخ', defaultLabel: 'تاريخ', width: 140, height: 40 },
+    { type: 'number', label: 'رقم', defaultLabel: 'رقم', width: 120, height: 40 },
+    { type: 'select', label: 'اختيار من متعدد', defaultLabel: 'اختيار من متعدد', width: 180, height: 40 },
+    { type: 'checkbox', label: 'مربع اختيار', defaultLabel: 'مربع اختيار', width: 120, height: 40 },
+    { type: 'signature', label: 'توقيع', defaultLabel: 'توقيع الموظف', width: 220, height: 100 },
+    { type: 'employee-name', label: 'اسم الموظف تلقائياً', defaultLabel: 'اسم الموظف', width: 180, height: 40, filledBy: 'system' },
+    { type: 'manager-name', label: 'اسم المدير تلقائياً', defaultLabel: 'اسم المدير', width: 180, height: 40, filledBy: 'system' },
+    { type: 'current-date', label: 'التاريخ الحالي تلقائياً', defaultLabel: 'التاريخ الحالي', width: 140, height: 40, filledBy: 'system' },
+    { type: 'request-number', label: 'رقم الطلب تلقائياً', defaultLabel: 'رقم الطلب', width: 140, height: 40, filledBy: 'system' },
+  ];
+
+  const getFieldLabel = (type: PdfFieldType) => fieldTypeOptions.find(option => option.type === type)?.label || type;
+
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
   }
 
   const addField = (type: PdfFieldType) => {
-    let label = 'حقل جديد';
-    if (type === 'text') label = 'نص قصير';
-    if (type === 'long-text') label = 'نص طويل';
-    if (type === 'date') label = 'تاريخ';
-    if (type === 'signature') label = 'توقيع المعلم';
+    const preset = fieldTypeOptions.find(option => option.type === type) || fieldTypeOptions[0];
 
     const newField: PdfField = {
       id: uuidv4(),
       type,
-      label,
+      label: preset.defaultLabel,
       x: 50,
       y: 50,
-      width: type === 'signature' ? 200 : 150,
-      height: type === 'signature' ? 100 : (type === 'long-text' ? 80 : 40),
+      width: preset.width,
+      height: preset.height,
       page: currentPage,
+      required: type === 'signature',
+      filledBy: preset.filledBy || 'employee',
+      fontSize: 14,
+      options: type === 'select' ? ['موافق', 'غير موافق'] : undefined,
     };
     onChange([...fields, newField]);
   };
@@ -62,18 +78,11 @@ export default function PdfFieldMapper({ pdfUrl, fields, onChange }: Props) {
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
           <h3 className="font-bold text-slate-800 mb-3 text-sm">إضافة حقول</h3>
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={() => addField('text')} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors text-sm text-right">
-              <Plus size={16} /> نص (اسم، مسمى..)
-            </button>
-            <button type="button" onClick={() => addField('long-text')} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors text-sm text-right">
-              <Plus size={16} /> مربع إفادة / رد
-            </button>
-            <button type="button" onClick={() => addField('date')} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors text-sm text-right">
-              <Plus size={16} /> تاريخ
-            </button>
-            <button type="button" onClick={() => addField('signature')} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors text-sm text-right">
-              <Plus size={16} /> مربع توقيع
-            </button>
+            {fieldTypeOptions.map(option => (
+              <button key={option.type} type="button" onClick={() => addField(option.type)} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors text-sm text-right">
+                <Plus size={16} /> {option.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -87,7 +96,7 @@ export default function PdfFieldMapper({ pdfUrl, fields, onChange }: Props) {
                 <div key={field.id} className="bg-white p-3 rounded border border-slate-200 shadow-sm flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">
-                      {field.type === 'signature' ? 'توقيع' : field.type === 'date' ? 'تاريخ' : field.type === 'long-text' ? 'نص طويل' : 'نص قصير'}
+                      {getFieldLabel(field.type)}
                     </span>
                     <button type="button" onClick={() => removeField(field.id)} className="text-red-500 hover:text-red-700 p-1">
                       <Trash2 size={14} />
@@ -100,6 +109,45 @@ export default function PdfFieldMapper({ pdfUrl, fields, onChange }: Props) {
                     className="text-sm border border-slate-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none w-full"
                     placeholder="عنوان الحقل (يظهر للمعلم)"
                   />
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(field.required)}
+                        onChange={(e) => updateField(field.id, { required: e.target.checked })}
+                        className="rounded border-slate-300 text-blue-600"
+                      />
+                      إجباري
+                    </label>
+                    <input
+                      type="number"
+                      min={9}
+                      max={24}
+                      value={field.fontSize || 14}
+                      onChange={(e) => updateField(field.id, { fontSize: Number(e.target.value) || 14 })}
+                      className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                      title="حجم الخط"
+                    />
+                  </div>
+                  <select
+                    value={field.filledBy || 'employee'}
+                    onChange={(e) => updateField(field.id, { filledBy: e.target.value as PdfField['filledBy'] })}
+                    className="text-xs border border-slate-200 rounded px-2 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-full bg-white"
+                  >
+                    <option value="employee">الموظف</option>
+                    <option value="supervisor">المشرف</option>
+                    <option value="principal">المدير</option>
+                    <option value="system">النظام تلقائياً</option>
+                  </select>
+                  {field.type === 'select' && (
+                    <textarea
+                      value={(field.options || []).join('\n')}
+                      onChange={(e) => updateField(field.id, { options: e.target.value.split('\n').map(item => item.trim()).filter(Boolean) })}
+                      rows={3}
+                      className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none w-full resize-none"
+                      placeholder="كل خيار في سطر مستقل"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -180,7 +228,12 @@ export default function PdfFieldMapper({ pdfUrl, fields, onChange }: Props) {
               </div>
               <div className="flex-1 p-2 flex items-center justify-center pointer-events-none opacity-50" style={{ direction: 'rtl' }}>
                 <span className="text-sm font-medium text-slate-700">
-                  {field.type === 'signature' ? '[مكان التوقيع]' : field.type === 'date' ? '[التاريخ]' : field.type === 'long-text' ? '[مكان الإفادة]' : '[نص قصير]'}
+                  {field.type === 'signature' ? '[مكان التوقيع]' :
+                   field.type === 'date' ? '[التاريخ]' :
+                   field.type === 'long-text' ? '[مكان الإفادة]' :
+                   field.type === 'checkbox' ? '[اختيار]' :
+                   field.filledBy === 'system' ? '[تلقائي]' :
+                   '[حقل تعبئة]'}
                 </span>
               </div>
             </Rnd>

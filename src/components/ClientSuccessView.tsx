@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { EmployeeRequest } from '../types';
-import { CheckCircle, Download, Loader2, Printer } from 'lucide-react';
+import { CheckCircle, Download, Loader2, Printer, Lock } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { FileDown } from 'lucide-react';
@@ -11,21 +11,16 @@ interface ClientSuccessViewProps {
 
 export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [hasAutoDownloaded, setHasAutoDownloaded] = useState(false);
-
-  useEffect(() => {
-    if (!hasAutoDownloaded) {
-      // Small timeout to allow DOM to render fully before generating PDF
-      const timer = setTimeout(() => {
-        handleDownloadPDF();
-        setHasAutoDownloaded(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasAutoDownloaded]);
+  const [pdfError, setPdfError] = useState('');
 
   const handleDownloadPDF = async () => {
+    if (request.finalPdfUrl) {
+      window.open(request.finalPdfUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     setIsGeneratingPdf(true);
+    setPdfError('');
     try {
       const element = document.getElementById('client-receipt-print');
       if (!element) return;
@@ -49,14 +44,18 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`HR-Request-Receipt-${request.id}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('حدث خطأ أثناء إنشاء ملف PDF');
+      setPdfError('حدث خطأ أثناء إنشاء ملف PDF.');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
   const handlePrint = () => {
+    if (request.finalPdfUrl) {
+      window.open(request.finalPdfUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     window.print();
   };
 
@@ -74,8 +73,13 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
         <p className="text-slate-600 font-medium text-lg mb-8 max-w-md relative z-10 leading-relaxed">
           الزميل المكرّم <span className="font-bold text-slate-900">{request.employeeName}</span>،<br />
           لقد تم استلام نموذجكم بنجاح (رقم الطلب: <span className="font-bold text-slate-900">{request.id}</span>).<br />
-          نشكر لكم حرصكم وتعاونكم الدائم، ونتمنى لكم يوماً سعيداً.
+          {request.finalPdfUrl ? 'تم إنشاء الخطاب النهائي كاملاً ويمكنك حفظه أو فتحه للطباعة.' : 'جاري تجهيز الملف النهائي، ويمكنك حفظ إشعار الاستلام مؤقتاً.'}
         </p>
+
+        <div className="relative z-10 mb-6 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-800">
+          <Lock size={15} />
+          تم قفل محتوى النموذج بعد الإرسال ولا يمكن تعديله أو استبداله.
+        </div>
         
         <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full justify-center">
           <button
@@ -83,7 +87,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
             className="flex items-center justify-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-8 py-4 rounded-xl shadow-sm transition-colors cursor-pointer"
           >
             <Printer size={20} />
-            <span>طباعة</span>
+            <span>{request.finalPdfUrl ? 'فتح للطباعة' : 'طباعة'}</span>
           </button>
           
           {request.finalPdfUrl ? (
@@ -94,7 +98,7 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
               className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-8 py-4 rounded-xl shadow-md transition-colors cursor-pointer"
             >
               <FileDown size={20} />
-              <span>حفظ</span>
+              <span>حفظ الخطاب النهائي</span>
             </a>
           ) : (
             <button
@@ -103,10 +107,15 @@ export default function ClientSuccessView({ request }: ClientSuccessViewProps) {
               className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl shadow-md transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isGeneratingPdf ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-              <span>حفظ</span>
+              <span>حفظ إشعار الاستلام</span>
             </button>
           )}
         </div>
+        {pdfError && (
+          <p className="relative z-10 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">
+            {pdfError}
+          </p>
+        )}
       </div>
 
       {/* Hidden/Printable Receipt Area */}

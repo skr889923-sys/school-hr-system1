@@ -50,6 +50,8 @@ export default function TemplateManager() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfFields, setPdfFields] = useState<PdfField[]>([]);
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const supportsTemplateActiveColumn = templates.some(template => Object.prototype.hasOwnProperty.call(template, 'active'));
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -94,8 +96,14 @@ export default function TemplateManager() {
   }, [pdfFile]);
 
   const handleSave = async () => {
-    if (!templateName) return alert('الرجاء إدخال اسم القالب');
-    if (templateType === 'pdf' && !pdfFile && !existingPdfUrl) return alert('الرجاء اختيار ملف PDF');
+    if (!templateName) {
+      setMessage({ type: 'error', text: 'الرجاء إدخال اسم القالب.' });
+      return;
+    }
+    if (templateType === 'pdf' && !pdfFile && !existingPdfUrl) {
+      setMessage({ type: 'error', text: 'الرجاء اختيار ملف PDF.' });
+      return;
+    }
     
     setSaving(true);
     try {
@@ -107,7 +115,7 @@ export default function TemplateManager() {
         pdfUrl = res.downloadUrl;
       }
 
-      const templateData = {
+      const templateData: any = {
         name: templateName,
         type: templateType,
         content: templateType === 'text' ? textContent : JSON.stringify(pdfFields),
@@ -115,18 +123,25 @@ export default function TemplateManager() {
         signature_box: null, // deprecated
       };
 
+      if (supportsTemplateActiveColumn) {
+        templateData.active = true;
+      }
+
       if (editTemplateId) {
-        await supabase.from('hr_templates').update(templateData).eq('id', editTemplateId);
+        const { error } = await supabase.from('hr_templates').update(templateData).eq('id', editTemplateId);
+        if (error) throw error;
       } else {
-        await supabase.from('hr_templates').insert({
+        const { error } = await supabase.from('hr_templates').insert({
           id,
           ...templateData,
           created_at: new Date().toISOString()
         });
+        if (error) throw error;
       }
       
       setCreateModalOpen(false);
       resetForm();
+      setMessage({ type: 'success', text: editTemplateId ? 'تم حفظ تعديلات القالب.' : 'تم حفظ القالب الجديد.' });
       
       // Update local state immediately so user sees changes without refreshing
       const newTmpl = { id, ...templateData, created_at: new Date().toISOString() };
@@ -136,8 +151,7 @@ export default function TemplateManager() {
         setTemplates(prev => [newTmpl as unknown as LetterTemplate, ...prev]);
       }
     } catch (err) {
-      console.error(err);
-      alert('حدث خطأ أثناء حفظ القالب');
+      setMessage({ type: 'error', text: 'حدث خطأ أثناء حفظ القالب.' });
     } finally {
       setSaving(false);
     }
@@ -147,7 +161,7 @@ export default function TemplateManager() {
     setIsImporting(true);
     try {
       for (const t of officialTemplates) {
-        await supabase.from('hr_templates').insert({
+        const payload: any = {
           id: uuidv4(),
           name: t.name,
           type: t.type,
@@ -155,12 +169,17 @@ export default function TemplateManager() {
           pdf_url: null,
           signature_box: null,
           created_at: new Date().toISOString()
-        });
+        };
+
+        if (supportsTemplateActiveColumn) {
+          payload.active = true;
+        }
+
+        await supabase.from('hr_templates').insert(payload);
       }
-      alert('تم استيراد النماذج الرسمية بنجاح!');
+      setMessage({ type: 'success', text: 'تم استيراد النماذج الرسمية بنجاح.' });
     } catch (err) {
-      console.error(err);
-      alert('حدث خطأ أثناء الاستيراد');
+      setMessage({ type: 'error', text: 'حدث خطأ أثناء الاستيراد.' });
     } finally {
       setIsImporting(false);
     }
@@ -212,21 +231,45 @@ export default function TemplateManager() {
       };
       reader.readAsArrayBuffer(file);
     } catch (error) {
-      console.error(error);
-      alert('فشل استيراد ملف الوورد.');
+      setMessage({ type: 'error', text: 'فشل استيراد ملف الوورد.' });
       setIsImporting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا القالب؟')) {
-      await supabase.from('hr_templates').delete().eq('id', id);
-      setTemplates(prev => prev.filter(t => t.id !== id));
+    if (!supportsTemplateActiveColumn) {
+      setMessage({ type: 'error', text: 'أرشفة القوالب تحتاج تنفيذ Migration الترقية أولاً.' });
+      return;
+    }
+
+    if (window.confirm('سيتم أرشفة القالب بدلاً من حذفه حتى تبقى الطلبات القديمة مستقرة. هل تريد المتابعة؟')) {
+      const { error } = await supabase
+        .from('hr_templates')
+        .update({ active: false })
+        .eq('id', id);
+
+      if (error) {
+        setMessage({ type: 'error', text: 'تعذرت أرشفة القالب. تأكد من تنفيذ Migration الخاص بالقوالب.' });
+        return;
+      }
+
+      setTemplates(prev => prev.map(t => t.id === id ? { ...t, active: false } : t));
+      setMessage({ type: 'success', text: 'تمت أرشفة القالب.' });
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8" dir="rtl">
+      {message && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-xs font-bold ${
+          message.type === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-rose-50 text-rose-800 border-rose-200'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
@@ -266,9 +309,14 @@ export default function TemplateManager() {
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-extrabold text-slate-800 text-sm">{t.name}</h3>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${t.type === 'pdf' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {t.type === 'pdf' ? 'ملف PDF' : 'نص ديناميكي'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {t.active === false && (
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-600">مؤرشف</span>
+                    )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${t.type === 'pdf' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {t.type === 'pdf' ? 'ملف PDF' : 'نص ديناميكي'}
+                    </span>
+                  </div>
                 </div>
                 {t.type === 'pdf' && t.content && (
                   <p className="text-[10px] text-slate-500 font-mono mt-2 flex items-center gap-1">
