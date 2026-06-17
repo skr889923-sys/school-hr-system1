@@ -281,7 +281,7 @@ export default function TemplateManager() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8" dir="rtl">
+    <div className="bt-panel-strong p-5 sm:p-6 mb-8" dir="rtl">
       {message && (
         <div className={`mb-4 rounded-xl border px-4 py-3 text-xs font-bold ${
           message.type === 'success'
@@ -292,26 +292,26 @@ export default function TemplateManager() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6">
         <div>
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <FileText size={20} className="text-blue-600" />
+          <h2 className="text-lg font-black text-[#173233] flex items-center gap-2">
+            <FileText size={20} className="text-[#0a7e7e]" />
             إدارة قوالب الخطابات
           </h2>
           <p className="text-xs text-slate-500 mt-1">قم بإعداد قوالب النصوص أو ملفات PDF مع تحديد مربع التوقيع.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <button 
             onClick={importOfficialTemplates}
             disabled={isImporting}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+            className="bt-soft-btn flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
           >
             {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
             {isImporting ? 'جاري الاستيراد...' : 'استيراد النماذج الرسمية'}
           </button>
           <button 
             onClick={() => { resetForm(); setCreateModalOpen(true); }}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-950 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+            className="bt-primary-btn flex items-center justify-center gap-2 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
           >
             <Plus size={16} /> إضافة قالب
           </button>
@@ -321,13 +321,13 @@ export default function TemplateManager() {
       {loading ? (
         <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-slate-400" /></div>
       ) : visibleTemplates.length === 0 ? (
-        <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl">
+        <div className="text-center py-10 border-2 border-dashed border-[#0a7e7e]/20 rounded-xl bg-white/60">
           <p className="text-sm text-slate-400 font-bold">لا توجد قوالب نشطة حالياً.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleTemplates.map(t => (
-            <div key={t.id} className="border border-slate-200 p-4 rounded-xl hover:shadow-md transition-shadow bg-slate-50 flex flex-col justify-between">
+            <div key={t.id} className="border border-[#0a7e7e]/12 p-4 rounded-xl hover:shadow-md transition-shadow bg-white/75 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-extrabold text-slate-800 text-sm">{t.name}</h3>
@@ -347,7 +347,7 @@ export default function TemplateManager() {
                   </p>
                 )}
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end gap-2">
+              <div className="mt-4 pt-3 border-t border-[#0a7e7e]/10 flex justify-end gap-2">
                 <button onClick={() => handleEdit(t)} className="text-blue-500 hover:bg-blue-100 p-1.5 rounded-lg transition-colors" title="تعديل">
                   <Edit2 size={16} />
                 </button>
@@ -365,9 +365,9 @@ export default function TemplateManager() {
         {createModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setCreateModalOpen(false); resetForm(); }} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
-              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <h3 className="text-base font-black text-slate-900">{editTemplateId ? 'تعديل القالب' : 'إضافة قالب جديد'}</h3>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+              <div className="p-5 border-b border-[#0a7e7e]/10 flex justify-between items-center bg-[#f5f3ed] rounded-t-xl">
+                <h3 className="text-base font-black text-[#173233]">{editTemplateId ? 'تعديل القالب' : 'إضافة قالب جديد'}</h3>
                 <button onClick={() => { setCreateModalOpen(false); resetForm(); }} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
               </div>
               
@@ -416,7 +416,7 @@ export default function TemplateManager() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 border border-slate-200 p-4 rounded-xl bg-slate-50">
+                  <div className="space-y-4 border border-[#0a7e7e]/15 p-4 rounded-xl bg-[#f5f3ed]/50">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">ملف الـ PDF المرجعي</label>
                       {editTemplateId && existingPdfUrl && !pdfFile && (
@@ -441,9 +441,9 @@ export default function TemplateManager() {
                 )}
               </div>
               
-              <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-white rounded-b-2xl">
+              <div className="p-4 border-t border-[#0a7e7e]/10 flex justify-end gap-2 bg-white rounded-b-xl">
                 <button onClick={() => { setCreateModalOpen(false); resetForm(); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-xs transition-colors">إلغاء</button>
-                <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2">
+                <button onClick={handleSave} disabled={saving} className="bt-primary-btn px-6 py-2 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2 disabled:opacity-60">
                   {saving && <Loader2 size={14} className="animate-spin" />} {editTemplateId ? 'حفظ التعديلات' : 'حفظ القالب'}
                 </button>
               </div>

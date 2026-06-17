@@ -30,10 +30,10 @@ export default function RequestHistory({
   return (
     <div className="space-y-6 text-right RTL" dir="rtl">
       {/* Upper Action/Header Panel */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="bt-panel-strong flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5">
         <div>
-          <h2 className="text-xl font-extrabold text-[#1C1C1C] flex items-center justify-end gap-2.5">
-            <ClipboardList className="text-blue-600" size={22} strokeWidth={2.2} />
+          <h2 className="text-xl font-black text-[#173233] flex items-center justify-end gap-2.5">
+            <ClipboardList className="text-[#0a7e7e]" size={22} strokeWidth={2.2} />
             <span>لوحة إدارة شؤون الموظفين</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -44,7 +44,7 @@ export default function RequestHistory({
         {onAddNew && (
           <button
             onClick={onAddNew}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+            className="bt-primary-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 font-bold text-xs px-5 py-3 rounded-xl transition-all duration-200 cursor-pointer"
           >
             <Plus size={16} />
             <span>إنشاء رابط لطلب جديد</span>
@@ -59,16 +59,16 @@ export default function RequestHistory({
         </h3>
 
         {requests.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+          <div className="bg-white/80 border-2 border-dashed border-[#0a7e7e]/20 rounded-xl p-12 text-center flex flex-col items-center justify-center">
             <FileText className="text-slate-300 mb-3" size={50} />
-            <h4 className="font-bold text-slate-800 text-sm mb-1">لا توجد طلبات!</h4>
+            <h4 className="font-bold text-slate-800 text-sm mb-1">لا توجد طلبات</h4>
             <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed mb-6">
               لم يقم أي موظف بتقديم طلب حتى الآن، أو لم تقم بإنشاء روابط جديدة.
             </p>
             {onAddNew && (
               <button
                 onClick={onAddNew}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer"
+                className="bt-primary-btn inline-flex items-center gap-1.5 px-4 py-2 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
               >
                 <Plus size={14} />
                 <span>إنشاء رابط لطلب جديد</span>
@@ -88,7 +88,7 @@ export default function RequestHistory({
               return (
                 <div
                   key={req.id}
-                  className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative"
+                  className="bt-panel bt-card-hover p-5 flex flex-col justify-between group relative"
                 >
                   {/* Top Header Card */}
                   <div className="flex justify-between items-start gap-2 mb-3">
@@ -96,7 +96,7 @@ export default function RequestHistory({
                       <span className="inline-block text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded-sm font-bold mb-1.5 border border-slate-200">
                         {req.id}
                       </span>
-                      <h4 className="font-extrabold text-slate-900 group-hover:text-blue-600 text-base transition-colors duration-150">
+                      <h4 className="font-extrabold text-slate-900 group-hover:text-[#0a7e7e] text-base transition-colors duration-150">
                         {req.employeeName || "موظف لم يحدد اسمه"}
                       </h4>
                       <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
@@ -124,10 +124,10 @@ export default function RequestHistory({
                   </div>
 
                   {/* Middleware stats */}
-                  <div className="border-t border-b border-slate-100 py-3 my-3 grid grid-cols-2 gap-2 text-xs text-center bg-slate-50 rounded-lg">
+                  <div className="border-y border-[#0a7e7e]/10 py-3 my-3 grid grid-cols-2 gap-2 text-xs text-center bg-[#f5f3ed]/70 rounded-lg">
                     <div>
                       <span className="block text-[10px] text-slate-400 mb-0.5">نوع الطلب:</span>
-                      <span className="font-extrabold text-slate-800 text-[11px] bg-white px-2 py-1 rounded border border-slate-100 shadow-xs inline-block">
+                      <span className="font-extrabold text-slate-800 text-[11px] bg-white px-2 py-1 rounded border border-[#0a7e7e]/10 shadow-xs inline-block">
                         {req.requestType || 'غير محدد'}
                       </span>
                     </div>
@@ -138,7 +138,7 @@ export default function RequestHistory({
                   </div>
 
                   {/* Client Info & Status Control */}
-                  <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-3">
+                  <div className="mb-4 bg-white/65 p-3 rounded-xl border border-[#0a7e7e]/10 flex flex-col gap-3">
                     <div className="flex flex-col gap-1 text-[11px]">
                       <span className="text-slate-500 font-bold mb-1">تواصل مع الموظف:</span>
                       {req.phone && (
@@ -147,7 +147,7 @@ export default function RequestHistory({
                             href={`https://wa.me/${req.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحباً أ. ${req.employeeName}، بخصوص طلبك رقم ${req.id}...`)}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 font-mono text-emerald-700 hover:text-emerald-800 transition-colors bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full text-xs font-semibold"
+                            className="flex items-center gap-1.5 font-mono text-emerald-700 hover:text-emerald-800 transition-colors bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-semibold"
                             dir="ltr"
                           >
                             <MessageCircle size={14} className="text-emerald-500" />
@@ -159,7 +159,7 @@ export default function RequestHistory({
                         <div className="flex items-center gap-2">
                           <a 
                             href={`mailto:${req.email}?subject=${encodeURIComponent(`بخصوص طلبك رقم ${req.id}`)}`}
-                            className="flex items-center gap-1.5 text-blue-700 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-full text-xs font-semibold"
+                            className="flex items-center gap-1.5 text-blue-700 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg text-xs font-semibold"
                           >
                             <Mail size={14} className="text-blue-500" />
                             إرسال إيميل ({req.email})
@@ -253,7 +253,7 @@ export default function RequestHistory({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onSelectRequest(req)}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-white bg-slate-900 hover:bg-slate-950 px-3.5 py-2 rounded-xl shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-white bg-[#173233] hover:bg-[#0a7e7e] px-3.5 py-2 rounded-xl shadow-sm transition-colors cursor-pointer"
                         title="عرض تفاصيل الطلب كاملة"
                       >
                         <Eye size={13} />
@@ -318,9 +318,9 @@ export default function RequestHistory({
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="p-6 border-b border-[#0a7e7e]/10 flex justify-between items-center bg-[#f5f3ed]">
                 <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                   <History size={18} className="text-amber-600" />
                   سجل حركات الطلب ({auditModalReq.id})

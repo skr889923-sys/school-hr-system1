@@ -109,10 +109,10 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
         />
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col"
+          className="relative bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col"
         >
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h3 className="text-lg font-black text-slate-900">إعدادات الملف الشخصي والتوقيع</h3>
+          <div className="p-6 border-b border-[#0a7e7e]/10 flex justify-between items-center bg-[#f5f3ed]">
+            <h3 className="text-lg font-black text-[#173233]">إعدادات الملف الشخصي والتوقيع</h3>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           
@@ -128,7 +128,7 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
               </div>
             )}
             
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl bg-white overflow-hidden relative" style={{ height: 200 }}>
+            <div className="border-2 border-dashed border-[#0a7e7e]/20 rounded-xl bg-white overflow-hidden relative" style={{ height: 200 }}>
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
                   <Loader2 className="animate-spin text-blue-500" />
@@ -150,7 +150,7 @@ export default function ProfileSettings({ isOpen, onClose }: ProfileSettingsProp
               <button onClick={clearSignature} className="flex items-center gap-1.5 px-4 py-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold text-xs transition-colors">
                 <Eraser size={16} /> مسح
               </button>
-              <button onClick={saveSignature} disabled={saving} className="flex items-center gap-1.5 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
+              <button onClick={saveSignature} disabled={saving} className="bt-primary-btn flex items-center gap-1.5 px-6 py-2 disabled:opacity-60 text-white rounded-xl font-bold text-xs transition-all">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 حفظ التوقيع
               </button>

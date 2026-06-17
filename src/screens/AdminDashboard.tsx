@@ -579,14 +579,14 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
+      <div className="min-h-screen bt-shell flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#FAF9F6] text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900" dir="rtl">
+    <div className="flex h-screen bt-shell text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900 overflow-hidden" dir="rtl">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
@@ -601,41 +601,47 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-72 bg-white border-l border-slate-200 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex flex-col`}>
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="School System Logo" className="h-10 object-contain" />
-            <h1 className="text-xl font-black text-slate-800">School System</h1>
+      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-72 bt-sidebar transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'} flex flex-col`}>
+        <div className="bt-gold-strip flex items-center justify-center px-3 py-1.5 text-xs font-black">
+          الإصدار الداخلي للمدرسة
+        </div>
+        <div className="h-24 px-5 border-b border-[#0a7e7e]/10 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src="/logo.png" alt="شعار المدرسة" className="h-12 w-12 object-contain drop-shadow-sm" />
+            <div className="min-w-0">
+              <h1 className="text-base font-black text-[#173233] leading-tight">نظام الموارد البشرية</h1>
+              <p className="text-[11px] font-bold text-[#0a7e7e]/75 mt-0.5">إدارة المدرسة والموظفين</p>
+            </div>
           </div>
           <button className="lg:hidden text-slate-500" onClick={() => setIsMobileSidebarOpen(false)}>
             <X size={24} />
           </button>
         </div>
         
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          <p className="px-4 text-[11px] font-black text-slate-400 mb-2 uppercase tracking-wider">القائمة الرئيسية</p>
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          <p className="px-3 pb-2 text-[11px] font-black text-[#0a7e7e]/60">القائمة الرئيسية</p>
           <button
             onClick={() => { setActiveTab('dashboard'); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-[#0a7e7e]/10 text-[#0a7e7e] shadow-sm ring-1 ring-[#0a7e7e]/10' : 'text-[#555] hover:bg-[#0a7e7e]/10 hover:text-[#0a7e7e]'}`}
           >
-            <LayoutDashboard size={20} className={activeTab === 'dashboard' ? 'text-blue-600' : 'text-slate-400'} />
+            <LayoutDashboard size={18} className={activeTab === 'dashboard' ? 'text-[#0a7e7e]' : 'text-slate-400'} />
             لوحة المعلومات
           </button>
           
           <button
             onClick={() => { setActiveTab('requests'); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'requests' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 ${activeTab === 'requests' ? 'bg-[#0a7e7e]/10 text-[#0a7e7e] shadow-sm ring-1 ring-[#0a7e7e]/10' : 'text-[#555] hover:bg-[#0a7e7e]/10 hover:text-[#0a7e7e]'}`}
           >
-            <FileText size={20} className={activeTab === 'requests' ? 'text-blue-600' : 'text-slate-400'} />
+            <FileText size={18} className={activeTab === 'requests' ? 'text-[#0a7e7e]' : 'text-slate-400'} />
             الطلبات والخطابات
           </button>
 
           {hasPermission(userRole, 'templates.manage') && (
             <button
               onClick={() => { setActiveTab('templates'); setIsMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'templates' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 ${activeTab === 'templates' ? 'bg-[#0a7e7e]/10 text-[#0a7e7e] shadow-sm ring-1 ring-[#0a7e7e]/10' : 'text-[#555] hover:bg-[#0a7e7e]/10 hover:text-[#0a7e7e]'}`}
             >
-              <FileStack size={20} className={activeTab === 'templates' ? 'text-blue-600' : 'text-slate-400'} />
+              <FileStack size={18} className={activeTab === 'templates' ? 'text-[#0a7e7e]' : 'text-slate-400'} />
               إدارة القوالب
             </button>
           )}
@@ -643,27 +649,27 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           {hasPermission(userRole, 'employees.read') && (
             <button
               onClick={() => { setActiveTab('employees'); setIsMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'employees' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 ${activeTab === 'employees' ? 'bg-[#0a7e7e]/10 text-[#0a7e7e] shadow-sm ring-1 ring-[#0a7e7e]/10' : 'text-[#555] hover:bg-[#0a7e7e]/10 hover:text-[#0a7e7e]'}`}
             >
-              <Users size={20} className={activeTab === 'employees' ? 'text-blue-600' : 'text-slate-400'} />
+              <Users size={18} className={activeTab === 'employees' ? 'text-[#0a7e7e]' : 'text-slate-400'} />
               إدارة الموظفين
             </button>
           )}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-[#0a7e7e]/10">
           <button 
             onClick={() => setProfileModalOpen(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all mb-2"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm text-[#555] hover:bg-[#0a7e7e]/10 hover:text-[#0a7e7e] transition-all mb-2"
           >
-            <Settings size={20} className="text-slate-400" />
+            <Settings size={18} className="text-slate-400" />
             الإعدادات الشخصية
           </button>
           <button 
             onClick={signOutUser}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-rose-600 hover:bg-rose-50 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-sm text-rose-700 hover:bg-rose-50 transition-all"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             تسجيل الخروج
           </button>
         </div>
@@ -672,23 +678,26 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 py-4 px-6 flex justify-between items-center">
+        <header className="bg-white/75 backdrop-blur-xl sticky top-0 z-30 border-b border-[#0a7e7e]/10 py-4 px-5 sm:px-7 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <button className="lg:hidden text-slate-600 p-2 hover:bg-slate-100 rounded-xl" onClick={() => setIsMobileSidebarOpen(true)}>
+            <button className="lg:hidden text-slate-600 p-2 hover:bg-[#0a7e7e]/10 rounded-xl" onClick={() => setIsMobileSidebarOpen(true)}>
               <Menu size={24} />
             </button>
-            <h2 className="text-xl font-black text-slate-800 hidden sm:block">
-              {activeTab === 'dashboard' && 'لوحة المعلومات'}
-              {activeTab === 'requests' && 'إدارة الطلبات والخطابات'}
-              {activeTab === 'templates' && 'إدارة قوالب النظام'}
-              {activeTab === 'employees' && 'إدارة الموظفين والصلاحيات'}
-            </h2>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-[#173233]">
+                {activeTab === 'dashboard' && 'لوحة المعلومات'}
+                {activeTab === 'requests' && 'إدارة الطلبات والخطابات'}
+                {activeTab === 'templates' && 'إدارة قوالب النظام'}
+                {activeTab === 'employees' && 'إدارة الموظفين والصلاحيات'}
+              </h2>
+              <p className="hidden sm:block text-[11px] font-bold text-slate-500 mt-0.5">تشغيل يومي، اعتماد، وأرشفة داخل مسار واحد.</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-slate-600 hidden sm:block">
               {getRoleLabel(userRole)}
             </span>
-            <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-black">
+            <div className="w-10 h-10 bg-[#0a7e7e]/10 text-[#0a7e7e] rounded-lg flex items-center justify-center font-black ring-1 ring-[#0a7e7e]/15">
               {getRoleInitials(userRole)}
             </div>
           </div>
@@ -696,9 +705,9 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
 
         <ProfileSettings isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-7 lg:p-8">
           {actionMessage && (
-            <div className={`max-w-6xl mx-auto mb-4 rounded-xl border px-4 py-3 text-sm font-bold ${
+            <div className={`max-w-7xl mx-auto mb-4 rounded-xl border px-4 py-3 text-sm font-bold ${
               actionMessage.type === 'success'
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : 'bg-rose-50 text-rose-800 border-rose-200'
@@ -708,39 +717,54 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           )}
 
           {activeTab === 'dashboard' && (
-            <div className="max-w-6xl mx-auto space-y-8">
-              <div>
-                <h1 className="text-2xl font-black text-slate-900">لوحة معلومات الموارد البشرية</h1>
-                <p className="text-sm text-slate-500 mt-1">مؤشرات تشغيلية مختصرة لحالة الموظفين والطلبات ومسار الاعتماد.</p>
+            <div className="max-w-7xl mx-auto space-y-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <span className="inline-flex rounded-md bg-[#0a7e7e]/10 px-2.5 py-1 text-[11px] font-black text-[#0a7e7e] ring-1 ring-[#0a7e7e]/10">
+                    تشغيل الموارد البشرية
+                  </span>
+                  <h1 className="mt-3 text-2xl sm:text-3xl font-black text-[#173233] leading-tight">لوحة معلومات الموارد البشرية</h1>
+                  <p className="text-sm text-slate-500 mt-1 max-w-2xl leading-6">مؤشرات تشغيلية مختصرة لحالة الموظفين والطلبات ومسار الاعتماد.</p>
+                </div>
+                <div className="rounded-xl border border-[#0a7e7e]/15 bg-white/70 px-4 py-3 text-xs font-bold text-slate-600 shadow-sm">
+                  آخر تحديث: {new Date().toLocaleDateString('ar-SA')}
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[
-                  { label: 'الموظفون', value: dashboardStats.employees, tone: 'text-slate-900 bg-white border-slate-200', hint: 'حسابات مسجلة أو بانتظار التسجيل' },
-                  { label: 'طلبات جديدة', value: dashboardStats.newRequests, tone: 'text-blue-800 bg-blue-50 border-blue-200', hint: 'خلال آخر 7 أيام' },
-                  { label: 'بانتظار الموظف', value: dashboardStats.waitingEmployee, tone: 'text-amber-800 bg-amber-50 border-amber-200', hint: 'تحتاج تعبئة أو توقيع' },
-                  { label: 'قيد الاعتماد', value: dashboardStats.pendingReview, tone: 'text-indigo-800 bg-indigo-50 border-indigo-200', hint: 'عند المشرف أو المدير' },
-                  { label: 'معتمدة / مكتملة', value: dashboardStats.approved, tone: 'text-emerald-800 bg-emerald-50 border-emerald-200', hint: 'جاهزة للأرشفة والطباعة' },
-                  { label: 'مرفوضة', value: dashboardStats.rejected, tone: 'text-rose-800 bg-rose-50 border-rose-200', hint: 'تحتاج سبباً موثقاً' },
-                  { label: 'مؤرشفة', value: dashboardStats.archived, tone: 'text-slate-700 bg-slate-50 border-slate-200', hint: 'غير قابلة للتعديل المعتاد' },
-                  { label: 'إجمالي الطلبات', value: requests.length, tone: 'text-slate-900 bg-white border-slate-200', hint: 'آخر 250 طلباً محملاً' },
+                  { label: 'الموظفون', value: dashboardStats.employees, hint: 'حسابات مسجلة أو بانتظار التسجيل', icon: Users, band: 'from-[#0a7e7e] to-[#109999]' },
+                  { label: 'طلبات جديدة', value: dashboardStats.newRequests, hint: 'خلال آخر 7 أيام', icon: Plus, band: 'from-[#c8922a] to-[#e0a830]' },
+                  { label: 'بانتظار الموظف', value: dashboardStats.waitingEmployee, hint: 'تحتاج تعبئة أو توقيع', icon: AlertCircle, band: 'from-amber-500 to-orange-500' },
+                  { label: 'قيد الاعتماد', value: dashboardStats.pendingReview, hint: 'عند المشرف أو المدير', icon: Clock, band: 'from-indigo-500 to-violet-600' },
+                  { label: 'معتمدة / مكتملة', value: dashboardStats.approved, hint: 'جاهزة للأرشفة والطباعة', icon: CheckCircle2, band: 'from-emerald-500 to-green-600' },
+                  { label: 'مرفوضة', value: dashboardStats.rejected, hint: 'تحتاج سبباً موثقاً', icon: X, band: 'from-rose-500 to-red-600' },
+                  { label: 'مؤرشفة', value: dashboardStats.archived, hint: 'غير قابلة للتعديل المعتاد', icon: FileStack, band: 'from-slate-500 to-gray-600' },
+                  { label: 'إجمالي الطلبات', value: requests.length, hint: 'آخر 250 طلباً محملاً', icon: FileText, band: 'from-[#173233] to-[#0a7e7e]' },
                 ].map(card => (
-                  <div key={card.label} className={`rounded-xl border p-5 shadow-sm ${card.tone}`}>
-                    <span className="block text-3xl font-black tabular-nums">{card.value}</span>
-                    <span className="block text-sm font-black mt-2">{card.label}</span>
-                    <span className="block text-[11px] font-semibold opacity-70 mt-1">{card.hint}</span>
+                  <div key={card.label} className="overflow-hidden rounded-xl bg-white text-slate-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+                    <div className={`bg-gradient-to-br ${card.band} p-4 text-white`}>
+                      <div className="flex items-start justify-between">
+                        <card.icon size={24} className="opacity-90" />
+                      </div>
+                      <span className="mt-3 block text-3xl font-black tabular-nums tracking-tight">{card.value}</span>
+                    </div>
+                    <div className="p-3">
+                      <span className="block text-sm font-black text-slate-800">{card.label}</span>
+                      <span className="block text-[11px] font-semibold text-slate-500 mt-1">{card.hint}</span>
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <section className="xl:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <section className="xl:col-span-2 bt-panel p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-base font-black text-slate-900">آخر الأنشطة</h2>
-                    <span className="text-[11px] font-bold text-slate-400">سجل تدقيق الطلبات</span>
+                    <span className="text-[11px] font-bold text-[#0a7e7e]">سجل تدقيق الطلبات</span>
                   </div>
                   {recentActivities.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                    <div className="rounded-xl border border-dashed border-[#0a7e7e]/20 bg-white/50 p-8 text-center text-sm font-bold text-slate-400">
                       لا توجد أنشطة مسجلة بعد.
                     </div>
                   ) : (
@@ -762,16 +786,16 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                   )}
                 </section>
 
-                <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <section className="bt-panel p-5">
                   <h2 className="text-base font-black text-slate-900 mb-4">الطلبات العاجلة</h2>
                   {urgentRequests.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                    <div className="rounded-xl border border-dashed border-[#0a7e7e]/20 bg-white/50 p-8 text-center text-sm font-bold text-slate-400">
                       لا توجد طلبات عاجلة حالياً.
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {urgentRequests.map(req => (
-                        <button key={req.id} onClick={() => handleSelectRequest(req)} className="w-full text-right rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
+                        <button key={req.id} onClick={() => handleSelectRequest(req)} className="w-full text-right rounded-xl border border-[#0a7e7e]/15 bg-white/70 p-3 hover:bg-[#0a7e7e]/5 transition-colors">
                           <span className="block text-sm font-black text-slate-900">{req.employeeName || 'موظف غير محدد'}</span>
                           <span className="block text-[11px] text-slate-500 mt-1">{req.id} · {getStatusMeta(req.status).shortLabel}</span>
                         </button>
@@ -781,18 +805,18 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 </section>
               </div>
 
-              <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <section className="bt-panel p-5">
                 <h2 className="text-base font-black text-slate-900 mb-4">أكثر النماذج استخداماً</h2>
                 {topTemplates.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400">
+                  <div className="rounded-xl border border-dashed border-[#0a7e7e]/20 bg-white/50 p-8 text-center text-sm font-bold text-slate-400">
                     لا توجد بيانات استخدام كافية.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
                     {topTemplates.map(([name, count]) => (
-                      <div key={name} className="rounded-xl bg-slate-50 border border-slate-200 p-4">
+                      <div key={name} className="rounded-xl bg-white/75 border border-[#0a7e7e]/15 p-4">
                         <span className="block text-sm font-black text-slate-800 line-clamp-2">{name}</span>
-                        <span className="block mt-3 text-2xl font-black text-slate-900 tabular-nums">{count}</span>
+                        <span className="block mt-3 text-2xl font-black text-[#0a7e7e] tabular-nums">{count}</span>
                       </div>
                     ))}
                   </div>
@@ -802,17 +826,17 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           )}
 
           {activeTab === 'requests' && (
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-slate-900">إدارة الطلبات والخطابات</h1>
+                  <h1 className="text-2xl font-black text-[#173233]">إدارة الطلبات والخطابات</h1>
                   <p className="text-sm text-slate-500 mt-1">تتبع الحالات، المراجعة، إصدار النماذج، ومتابعة الردود.</p>
                 </div>
                 
                 {hasPermission(userRole, 'requests.create') && (
                   <button
                     onClick={openCreateModal}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-sm transition-all"
+                    className="bt-primary-btn flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all"
                   >
                     <Plus size={18} />
                     <span>إصدار مساءلة/خطاب جديد</span>
@@ -833,9 +857,9 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           )}
 
           {activeTab === 'templates' && hasPermission(userRole, 'templates.manage') && (
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
               <div>
-                <h1 className="text-2xl font-black text-slate-900">إدارة قوالب الخطابات والنماذج</h1>
+                <h1 className="text-2xl font-black text-[#173233]">إدارة قوالب الخطابات والنماذج</h1>
                 <p className="text-sm text-slate-500 mt-1">إنشاء وتحرير وتخصيص قوالب النظام للاستخدام السريع.</p>
               </div>
               <TemplateManager />
@@ -843,7 +867,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           )}
 
           {activeTab === 'employees' && hasPermission(userRole, 'employees.read') && (
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
               <UserManagement userRole={userRole} />
             </div>
           )}
@@ -861,10 +885,10 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 className="text-lg font-black text-slate-900">إنشاء طلب جديد</h3>
+              <div className="p-5 border-b border-[#0a7e7e]/10 flex justify-between items-center bg-[#f5f3ed]">
+                <h3 className="text-lg font-black text-[#173233]">إنشاء طلب جديد</h3>
                 <button onClick={() => setCreateReqModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
               </div>
               <div className="p-5 space-y-4 overflow-y-auto">
@@ -946,7 +970,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 {/* Editor for Template Content */}
                 {selectedTemplateId && templates.find(t => t.id === selectedTemplateId)?.type === 'text' && (
                   <div className="pt-4 border-t border-slate-100 mt-4">
-                    <label className="block text-xs font-black text-blue-700 mb-1.5 flex items-center gap-1.5">📝 تحرير محتوى الخطاب المخصص لهذا الطلب</label>
+                    <label className="block text-xs font-black text-blue-700 mb-1.5 flex items-center gap-1.5">تحرير محتوى الخطاب المخصص لهذا الطلب</label>
                     <p className="text-[10px] text-slate-500 mb-3">يمكنك تعديل النص قبل إرساله للموظف. ستبقى المتغيرات مثل <code className="bg-slate-100 px-1 rounded">[اسم الموظف]</code> أو تعبئة الحقول أدناه لتعمل تلقائياً.</p>
                     <div className="quill-a4-wrapper" dir="rtl">
                       <div className="quill-a4-editor bg-white rounded-lg">
@@ -966,7 +990,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 {/* حقول القالب الديناميكية */}
                 {currentTemplateFields.length > 0 && (
                   <div className="pt-4 border-t border-slate-100 mt-4">
-                    <p className="text-xs font-black text-blue-700 mb-3 flex items-center gap-1.5">📋 حقول النموذج المطلوب تعبئتها:</p>
+                    <p className="text-xs font-black text-blue-700 mb-3 flex items-center gap-1.5">حقول النموذج المطلوب تعبئتها:</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {currentTemplateFields.map((field) => (
                         <div key={field.key} className={field.fullWidth ? 'sm:col-span-2' : ''}>
@@ -1010,9 +1034,9 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                   </div>
                 )}
               </div>
-              <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+              <div className="p-4 border-t border-[#0a7e7e]/10 flex justify-end gap-2 bg-[#f5f3ed]">
                 <button onClick={() => setCreateReqModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-xs transition-colors">إلغاء</button>
-                <button onClick={handleCreateNewRequest} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-colors shadow-md">
+                <button onClick={handleCreateNewRequest} className="bt-primary-btn px-6 py-2 text-white rounded-xl font-bold text-xs transition-all">
                   إصدار الخطاب
                 </button>
               </div>
@@ -1037,14 +1061,14 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden"
+              className="relative bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden"
             >
-              <div className="p-6 border-b border-slate-100">
-                <h3 className="text-lg font-black text-slate-900">تم إنشاء الرابط بنجاح</h3>
+              <div className="p-6 border-b border-[#0a7e7e]/10 bg-white">
+                <h3 className="text-lg font-black text-[#173233]">تم إنشاء الرابط بنجاح</h3>
                 <p className="text-xs text-slate-500 mt-1">قم بنسخ الرابط التالي وإرساله للموظف لتعبئة الطلب.</p>
               </div>
               
-              <div className="p-6 space-y-4 bg-slate-50">
+              <div className="p-6 space-y-4 bg-[#f5f3ed]/70">
                 <div className="relative">
                   <div className="w-full bg-white border border-slate-200 rounded-xl p-3 pr-4 pl-12 text-sm text-slate-700 font-mono text-left break-all shadow-sm flex items-center">
                     {newLinkModal.link}
@@ -1078,7 +1102,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 </div>
                 <button
                   onClick={() => setNewLinkModal({ isOpen: false, link: null })}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-950 text-white font-bold text-xs rounded-xl transition-colors"
+                  className="bt-primary-btn px-5 py-2.5 text-white font-bold text-xs rounded-xl transition-all"
                 >
                   إغلاق
                 </button>
@@ -1099,10 +1123,10 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative bg-white w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <div className="p-6 border-b border-[#0a7e7e]/10 bg-[#f5f3ed] flex justify-between items-center">
+                <h3 className="text-lg font-black text-[#173233] flex items-center gap-2">
                   <Upload size={18} className="text-blue-600" />
                   مرفقات إدارية
                 </h3>
@@ -1137,7 +1161,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
-                  <label className="flex items-center justify-center gap-2 w-full cursor-pointer bg-slate-900 hover:bg-slate-950 text-white py-3 rounded-xl transition-colors text-xs font-bold">
+                  <label className="bt-primary-btn flex items-center justify-center gap-2 w-full cursor-pointer text-white py-3 rounded-xl transition-all text-xs font-bold">
                     {adminFilesModal.uploading ? (
                       <><Loader2 size={16} className="animate-spin" /> جاري الرفع...</>
                     ) : (

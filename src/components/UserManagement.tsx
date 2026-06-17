@@ -171,14 +171,14 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <Users className="w-6 h-6 text-blue-600" />
+        <h2 className="text-xl font-black text-[#173233] flex items-center gap-2">
+          <Users className="w-6 h-6 text-[#0a7e7e]" />
           إدارة الموظفين والمعلمين
         </h2>
         {canManageEmployees && (
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+            className="bt-primary-btn px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
           >
             <UserPlus className="w-4 h-4" />
             إضافة موظف جديد
@@ -186,7 +186,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div className="bt-panel-strong p-5 sm:p-6">
         {actionMessage && (
           <div className={`mb-4 rounded-xl border px-4 py-3 text-xs font-bold ${
             actionMessage.type === 'success'
@@ -197,7 +197,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
           </div>
         )}
 
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6">
+        <div className="flex items-center gap-3 bg-white/75 border border-[#0a7e7e]/15 rounded-xl px-4 py-3 mb-6">
           <Search className="w-5 h-5 text-slate-400" />
           <input 
             type="text"
@@ -214,14 +214,14 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
             <p className="text-slate-500 font-medium">جاري تحميل بيانات الموظفين...</p>
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <div className="text-center py-12 bg-[#f5f3ed]/60 rounded-xl border border-dashed border-[#0a7e7e]/20">
             <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 font-bold">لم يتم العثور على موظفين</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-sm">
-              <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <thead className="bg-[#f5f3ed] text-slate-600 font-bold border-b border-[#0a7e7e]/10">
                 <tr>
                   <th className="px-4 py-3 rounded-tr-xl">الاسم</th>
                   <th className="px-4 py-3">المسمى / القسم</th>
@@ -233,7 +233,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={emp.id} className="hover:bg-[#0a7e7e]/5 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-bold text-slate-800">{emp.full_name}</div>
                       <div className="text-xs text-slate-500">{emp.national_id || '---'}</div>
@@ -253,9 +253,9 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
                         emp.role === 'hr_manager' || emp.role === 'it_support' || emp.role === 'principal' 
-                          ? 'bg-purple-100 text-purple-700' 
+                          ? 'bg-[#0a7e7e]/10 text-[#0a7e7e]' 
                           : 'bg-emerald-100 text-emerald-700'
                       }`}>
                         {getRoleLabel(emp.role)}
@@ -323,13 +323,13 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
+              className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
             >
-              <div className="bg-slate-50 border-b border-slate-200 p-5 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-800">
+              <div className="bg-[#f5f3ed] border-b border-[#0a7e7e]/10 p-5 flex items-center justify-between">
+                <h3 className="text-lg font-black text-[#173233]">
                   {editingEmployee ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'}
                 </h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full border border-slate-200">
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-lg border border-[#0a7e7e]/10">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -403,7 +403,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                 </div>
               </div>
               
-              <div className="bg-slate-50 border-t border-slate-200 p-4 flex justify-end gap-3">
+              <div className="bg-[#f5f3ed] border-t border-[#0a7e7e]/10 p-4 flex justify-end gap-3">
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -415,7 +415,7 @@ export default function UserManagement({ userRole }: { userRole: UserRole }) {
                   type="submit"
                   form="employee-form"
                   disabled={isSaving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  className="bt-primary-btn disabled:opacity-60 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
                 >
                   {isSaving ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
