@@ -294,18 +294,19 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
 
   const handleDeleteRequest = async (id: string) => {
     if (!hasPermission(userRole, 'requests.archive')) {
-      setActionMessage({ type: 'error', text: 'ليست لديك صلاحية أرشفة الطلبات.' });
+      setActionMessage({ type: 'error', text: 'ليست لديك صلاحية حذف الطلبات أو أرشفتها.' });
       return;
     }
 
     const req = requests.find(item => item.id === id);
     if (!req) return;
 
-    if (window.confirm('سيتم أرشفة الطلب مع إبقاء سجل التدقيق والمرفقات. هل تريد المتابعة؟')) {
+    if (window.confirm('سيتم حذف الطلب من القائمة ونقله للأرشيف مع إبقاء سجل التدقيق والمرفقات. هل تريد المتابعة؟')) {
       try {
+        const now = new Date().toISOString();
         const auditTrail = await appendRequestAudit(req.auditTrail, {
           action: 'REQUEST_ARCHIVED',
-          details: 'تمت أرشفة الطلب بدلاً من حذفه نهائياً',
+          details: 'تم حذف الطلب من القائمة ونقله للأرشيف',
           performedByRole: userRole,
           performedByName: actorName,
           entityType: 'hr_request',
@@ -314,20 +315,49 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
           newValue: { status: 'archived' },
         });
 
-        const { error } = await supabase
-          .from('hr_requests')
-          .update({
+        const archivePayloads: Array<Record<string, unknown>> = [
+          {
             status: 'archived',
             audit_trail: auditTrail,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id);
+            archived_at: now,
+            updated_at: now,
+          },
+          {
+            status: 'archived',
+            audit_trail: auditTrail,
+          },
+          {
+            status: 'archived',
+            updated_at: now,
+          },
+          {
+            status: 'archived',
+          },
+        ];
 
-        if (error) throw error;
+        let archiveError: unknown = null;
+        let archived = false;
+
+        for (const payload of archivePayloads) {
+          const { error } = await supabase
+            .from('hr_requests')
+            .update(payload)
+            .eq('id', id);
+
+          if (!error) {
+            archiveError = null;
+            archived = true;
+            break;
+          }
+
+          archiveError = error;
+        }
+
+        if (!archived) throw archiveError;
         setRequests(prev => prev.map(item => item.id === id ? { ...item, status: 'archived', auditTrail } : item));
-        setActionMessage({ type: 'success', text: 'تمت أرشفة الطلب بنجاح.' });
+        setActionMessage({ type: 'success', text: 'تم حذف الطلب من القائمة ونقله للأرشيف.' });
       } catch {
-        setActionMessage({ type: 'error', text: 'تعذرت أرشفة الطلب. تحقق من الصلاحيات ثم حاول مرة أخرى.' });
+        setActionMessage({ type: 'error', text: 'تعذر حذف الطلب من القائمة. تحقق من الصلاحيات ثم حاول مرة أخرى.' });
       }
     }
   };
@@ -544,6 +574,8 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
+
+  const activeRequests = requests.filter(req => req.status !== 'archived');
 
   if (loading) {
     return (
@@ -789,7 +821,7 @@ export default function AdminDashboard({ userRole }: AdminDashboardProps) {
               </div>
 
               <RequestHistory 
-                requests={requests}
+                requests={activeRequests}
                 userRole={userRole}
                 onSelectRequest={handleSelectRequest}
                 onDeleteRequest={hasPermission(userRole, 'requests.archive') ? handleDeleteRequest : undefined}

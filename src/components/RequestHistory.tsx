@@ -294,7 +294,7 @@ export default function RequestHistory({
                         <button
                           onClick={() => onDeleteRequest(req.id)}
                           className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-rose-100 bg-white"
-                          title="أرشفة الطلب"
+                          title="حذف الطلب من القائمة"
                         >
                           <Trash2 size={13} />
                         </button>

@@ -52,6 +52,12 @@ export default function TemplateManager() {
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const supportsTemplateActiveColumn = templates.some(template => Object.prototype.hasOwnProperty.call(template, 'active'));
+  const visibleTemplates = templates.filter(template => template.active !== false);
+
+  const isMissingColumnError = (error: any, columnName: string) => {
+    const message = String(error?.message || error?.details || '').toLowerCase();
+    return error?.code === '42703' || (message.includes(columnName.toLowerCase()) && message.includes('column'));
+  };
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -237,24 +243,40 @@ export default function TemplateManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!supportsTemplateActiveColumn) {
-      setMessage({ type: 'error', text: 'أرشفة القوالب تحتاج تنفيذ Migration الترقية أولاً.' });
-      return;
-    }
+    const template = templates.find(t => t.id === id);
+    const canArchive = supportsTemplateActiveColumn || (template ? Object.prototype.hasOwnProperty.call(template, 'active') : false);
 
-    if (window.confirm('سيتم أرشفة القالب بدلاً من حذفه حتى تبقى الطلبات القديمة مستقرة. هل تريد المتابعة؟')) {
-      const { error } = await supabase
+    if (window.confirm('سيتم حذف القالب من القائمة. إذا كانت قاعدة البيانات تدعم الأرشفة فسيتم أرشفته للحفاظ على الطلبات القديمة. هل تريد المتابعة؟')) {
+      if (canArchive) {
+        const { error } = await supabase
+          .from('hr_templates')
+          .update({ active: false })
+          .eq('id', id);
+
+        if (!error) {
+          setTemplates(prev => prev.map(t => t.id === id ? { ...t, active: false } : t));
+          setMessage({ type: 'success', text: 'تم حذف القالب من القائمة ونقله للأرشيف.' });
+          return;
+        }
+
+        if (!isMissingColumnError(error, 'active')) {
+          setMessage({ type: 'error', text: 'تعذر حذف القالب من القائمة. تحقق من الصلاحيات ثم حاول مرة أخرى.' });
+          return;
+        }
+      }
+
+      const { error: deleteError } = await supabase
         .from('hr_templates')
-        .update({ active: false })
+        .delete()
         .eq('id', id);
 
-      if (error) {
-        setMessage({ type: 'error', text: 'تعذرت أرشفة القالب. تأكد من تنفيذ Migration الخاص بالقوالب.' });
+      if (deleteError) {
+        setMessage({ type: 'error', text: 'تعذر حذف القالب. إذا كان مرتبطاً بطلبات قديمة، نفذ Migration الأرشفة أولاً.' });
         return;
       }
 
-      setTemplates(prev => prev.map(t => t.id === id ? { ...t, active: false } : t));
-      setMessage({ type: 'success', text: 'تمت أرشفة القالب.' });
+      setTemplates(prev => prev.filter(t => t.id !== id));
+      setMessage({ type: 'success', text: 'تم حذف القالب.' });
     }
   };
 
@@ -298,13 +320,13 @@ export default function TemplateManager() {
 
       {loading ? (
         <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-slate-400" /></div>
-      ) : templates.length === 0 ? (
+      ) : visibleTemplates.length === 0 ? (
         <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl">
-          <p className="text-sm text-slate-400 font-bold">لا يوجد قوالب مسجلة حالياً.</p>
+          <p className="text-sm text-slate-400 font-bold">لا توجد قوالب نشطة حالياً.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map(t => (
+          {visibleTemplates.map(t => (
             <div key={t.id} className="border border-slate-200 p-4 rounded-xl hover:shadow-md transition-shadow bg-slate-50 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-2">
